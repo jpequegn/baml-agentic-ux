@@ -8,3 +8,9 @@ dependencies = [
     "baml-py>=0.215.2",
     "pydantic>=2.12.5",
 ]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.407",
+    "pytest>=9.0.2",
+]
