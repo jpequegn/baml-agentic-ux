@@ -55,9 +55,10 @@ class UtteranceMatch {
 }
 
 class ExtractedParameter {
-  parameter_name string
-  extracted_value string
-  confidence float
+  parameter_name string @description("Name of the parameter")
+  extracted_value string @description("The value extracted from input")
+  source_text string? @description("Original text this was extracted from")
+  confidence float @description("Confidence in extraction (0-1)")
 }
 
 // ============================================
