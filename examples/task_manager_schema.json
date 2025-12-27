@@ -1,0 +1,146 @@
+{
+  "schema_id": "task-manager-v1",
+  "name": "Task Manager LUI",
+  "description": "A Language User Interface for managing tasks and projects",
+  "version": "1.0.0",
+  "domain": {
+    "domain_name": "task-management",
+    "subdomain": "personal-productivity",
+    "description": "Task and project management for individuals and teams",
+    "key_concepts": ["tasks", "projects", "deadlines", "priorities", "assignments"]
+  },
+  "components": [
+    {
+      "component_id": "create-task",
+      "component_type": "ACTION",
+      "intent": "Create a new task",
+      "invocation": {
+        "primary_phrase": "create task",
+        "alternate_phrases": ["add task", "new task", "make a task"],
+        "examples": [
+          "Create a task to review the PR",
+          "Add a task called finish report",
+          "New task: send email to client"
+        ]
+      },
+      "feedback": {
+        "success_template": "Task '{title}' has been created successfully",
+        "error_template": "Could not create task: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "list-tasks",
+      "component_type": "QUERY",
+      "intent": "List all tasks or filter tasks",
+      "invocation": {
+        "primary_phrase": "list tasks",
+        "alternate_phrases": ["show tasks", "my tasks", "what are my tasks"],
+        "examples": [
+          "Show me my tasks",
+          "List all high priority tasks",
+          "What tasks are due today"
+        ]
+      },
+      "feedback": {
+        "success_template": "Here are your tasks",
+        "error_template": "Could not retrieve tasks: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "complete-task",
+      "component_type": "ACTION",
+      "intent": "Mark a task as complete",
+      "invocation": {
+        "primary_phrase": "complete task",
+        "alternate_phrases": ["mark done", "finish task", "mark complete", "done with"],
+        "examples": [
+          "Mark the review task as complete",
+          "I finished the report task",
+          "Done with task 123"
+        ]
+      },
+      "feedback": {
+        "success_template": "Task marked as complete!",
+        "error_template": "Could not complete task: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "delete-task",
+      "component_type": "ACTION",
+      "intent": "Delete a task",
+      "invocation": {
+        "primary_phrase": "delete task",
+        "alternate_phrases": ["remove task", "cancel task"],
+        "examples": [
+          "Delete the old task",
+          "Remove task 456"
+        ]
+      },
+      "feedback": {
+        "success_template": "Task has been deleted",
+        "error_template": "Could not delete task: {error}",
+        "confirmation_required": true,
+        "confirmation_prompt": "Are you sure you want to delete this task?"
+      }
+    },
+    {
+      "component_id": "set-priority",
+      "component_type": "ACTION",
+      "intent": "Set task priority",
+      "invocation": {
+        "primary_phrase": "set priority",
+        "alternate_phrases": ["change priority", "prioritize", "make urgent"],
+        "examples": [
+          "Set priority to high",
+          "Make this task urgent",
+          "Prioritize the client meeting task"
+        ]
+      },
+      "feedback": {
+        "success_template": "Priority updated to {priority}",
+        "error_template": "Could not update priority: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "search-tasks",
+      "component_type": "QUERY",
+      "intent": "Search for tasks",
+      "invocation": {
+        "primary_phrase": "search tasks",
+        "alternate_phrases": ["find task", "look for task"],
+        "examples": [
+          "Search for tasks about meeting",
+          "Find all tasks related to client"
+        ]
+      },
+      "feedback": {
+        "success_template": "Found {count} matching tasks",
+        "error_template": "Search failed: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "help",
+      "component_type": "FEEDBACK",
+      "intent": "Get help with using the task manager",
+      "invocation": {
+        "primary_phrase": "help",
+        "alternate_phrases": ["what can you do", "how do I", "help me"],
+        "examples": [
+          "Help",
+          "What can you do?",
+          "How do I create a task?"
+        ]
+      },
+      "feedback": {
+        "success_template": "I can help you manage your tasks. You can create tasks, list them, mark them complete, set priorities, and more. Just tell me what you'd like to do!",
+        "error_template": "Sorry, I couldn't load help information",
+        "confirmation_required": false
+      }
+    }
+  ]
+}

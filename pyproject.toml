@@ -7,10 +7,20 @@ requires-python = ">=3.12"
 dependencies = [
     "baml-py>=0.215.2",
     "pydantic>=2.12.5",
+    "rich>=14.2.0",
+    "typer>=0.21.0",
 ]
 
 [dependency-groups]
 dev = [
     "pyright>=1.1.407",
     "pytest>=9.0.2",
+    "pytest-asyncio>=0.25.0",
 ]
+
+[project.scripts]
+lui-sim = "lui_simulator.cli:main"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
