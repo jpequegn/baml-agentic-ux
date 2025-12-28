@@ -1,0 +1,907 @@
+{
+  "schema_id": "p3-podcast-processor-v1",
+  "name": "P3 Podcast Processor LUI",
+  "description": "Language User Interface for automated podcast processing, transcription, and content generation",
+  "version": "1.0.0",
+  "domain": {
+    "domain_name": "podcast-processing",
+    "subdomain": "content-automation",
+    "description": "Automated podcast ingestion, transcription, summarization, and blog generation",
+    "key_concepts": [
+      "podcasts",
+      "episodes",
+      "transcripts",
+      "summaries",
+      "digests",
+      "blog posts",
+      "RSS feeds",
+      "AI processing"
+    ],
+    "terminology": {
+      "digest": "A structured summary of podcast episodes",
+      "transcription": "Converting audio to text",
+      "Parakeet": "MLX-optimized transcription engine for Apple Silicon",
+      "P3": "Parakeet Podcast Processor"
+    }
+  },
+  "components": [
+    {
+      "component_id": "fetch-episodes",
+      "component_type": "ACTION",
+      "intent": "Download new podcast episodes",
+      "invocation": {
+        "primary_phrase": "fetch new episodes",
+        "alternate_phrases": [
+          "download episodes",
+          "get new podcasts",
+          "update podcasts",
+          "sync podcasts"
+        ],
+        "examples": [
+          "Fetch new episodes",
+          "Download the latest 5 episodes",
+          "Get new episodes from All-In",
+          "Update all my podcasts"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "max_episodes",
+          "param_type": "NUMBER",
+          "description": "Maximum number of episodes to download per feed",
+          "required": false,
+          "default_value": "10",
+          "extraction_hints": ["latest", "last", "most recent", "episodes"],
+          "validation": null
+        },
+        {
+          "name": "podcast_name",
+          "param_type": "STRING",
+          "description": "Specific podcast to fetch from",
+          "required": false,
+          "default_value": null,
+          "extraction_hints": ["from", "podcast", "show"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Downloaded {count} new episodes from {feeds} feeds",
+        "error_template": "Could not fetch episodes: {error}",
+        "progress_template": "Fetching episodes from {current_feed}...",
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "transcribe-episodes",
+      "component_type": "ACTION",
+      "intent": "Transcribe audio to text",
+      "invocation": {
+        "primary_phrase": "transcribe episodes",
+        "alternate_phrases": [
+          "convert audio to text",
+          "generate transcripts",
+          "process audio"
+        ],
+        "examples": [
+          "Transcribe all pending episodes",
+          "Transcribe episode 42",
+          "Convert the latest episode to text"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "episode_id",
+          "param_type": "NUMBER",
+          "description": "Specific episode ID to transcribe",
+          "required": false,
+          "default_value": null,
+          "extraction_hints": ["episode", "id", "number"],
+          "validation": null
+        },
+        {
+          "name": "model",
+          "param_type": "STRING",
+          "description": "Whisper model size (tiny, base, small, medium, large)",
+          "required": false,
+          "default_value": "base",
+          "extraction_hints": ["model", "using"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Transcribed {count} episodes successfully",
+        "error_template": "Transcription failed: {error}",
+        "progress_template": "Transcribing: {episode_title} ({progress}%)",
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "generate-summaries",
+      "component_type": "ACTION",
+      "intent": "Generate AI summaries from transcripts",
+      "invocation": {
+        "primary_phrase": "generate summaries",
+        "alternate_phrases": [
+          "summarize episodes",
+          "create digests",
+          "process transcripts",
+          "analyze episodes"
+        ],
+        "examples": [
+          "Generate summaries for all transcribed episodes",
+          "Summarize episode 42",
+          "Create a digest of today's episodes"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "episode_id",
+          "param_type": "NUMBER",
+          "description": "Specific episode ID to summarize",
+          "required": false,
+          "default_value": null,
+          "extraction_hints": ["episode", "id"],
+          "validation": null
+        },
+        {
+          "name": "provider",
+          "param_type": "STRING",
+          "description": "LLM provider (ollama, openai, anthropic)",
+          "required": false,
+          "default_value": "ollama",
+          "extraction_hints": ["using", "with", "provider"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Generated summaries for {count} episodes",
+        "error_template": "Summary generation failed: {error}",
+        "progress_template": "Summarizing: {episode_title}",
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "export-digest",
+      "component_type": "ACTION",
+      "intent": "Export daily digest to file",
+      "invocation": {
+        "primary_phrase": "export digest",
+        "alternate_phrases": [
+          "save digest",
+          "export summaries",
+          "create digest file"
+        ],
+        "examples": [
+          "Export today's digest",
+          "Export digest for December 25th as markdown",
+          "Save yesterday's digest to S3"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "date",
+          "param_type": "DATE",
+          "description": "Date to export (YYYY-MM-DD)",
+          "required": false,
+          "default_value": "today",
+          "extraction_hints": ["for", "date", "on"],
+          "validation": null
+        },
+        {
+          "name": "format",
+          "param_type": "STRING",
+          "description": "Export format (markdown or json)",
+          "required": false,
+          "default_value": "markdown",
+          "extraction_hints": ["as", "format", "in"],
+          "validation": null
+        },
+        {
+          "name": "upload_s3",
+          "param_type": "BOOLEAN",
+          "description": "Whether to upload to S3",
+          "required": false,
+          "default_value": "false",
+          "extraction_hints": ["to s3", "upload", "cloud"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Exported digest to {filename}",
+        "error_template": "Export failed: {error}",
+        "progress_template": null,
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "write-blog",
+      "component_type": "ACTION",
+      "intent": "Generate blog post from podcast content",
+      "invocation": {
+        "primary_phrase": "write a blog post",
+        "alternate_phrases": [
+          "create blog post",
+          "generate article",
+          "write about"
+        ],
+        "examples": [
+          "Write a blog post about AI in venture capital",
+          "Create an article on the latest AI trends from today's podcasts",
+          "Generate a blog post about what they discussed"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "topic",
+          "param_type": "STRING",
+          "description": "Blog post topic or angle",
+          "required": true,
+          "default_value": null,
+          "extraction_hints": ["about", "on", "topic", "regarding"],
+          "validation": null
+        },
+        {
+          "name": "date",
+          "param_type": "DATE",
+          "description": "Date to use for source content",
+          "required": false,
+          "default_value": "today",
+          "extraction_hints": ["from", "using", "date"],
+          "validation": null
+        },
+        {
+          "name": "target_grade",
+          "param_type": "NUMBER",
+          "description": "Target AP English grade (0-100)",
+          "required": false,
+          "default_value": "91",
+          "extraction_hints": ["grade", "quality", "target"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Blog post generated! Grade: {grade}/100. Saved to {filename}",
+        "error_template": "Could not generate blog post: {error}",
+        "progress_template": "Writing blog post... Iteration {iteration}, current grade: {grade}",
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "query-episode",
+      "component_type": "QUERY",
+      "intent": "Ask a question about an episode",
+      "invocation": {
+        "primary_phrase": "ask about episode",
+        "alternate_phrases": [
+          "query episode",
+          "what did they say about",
+          "find in episode"
+        ],
+        "examples": [
+          "What did they say about OpenAI in episode 42?",
+          "Ask about the funding discussion in the latest episode",
+          "What were the key takeaways from yesterday's All-In?"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "question",
+          "param_type": "STRING",
+          "description": "Question to ask about the episode",
+          "required": true,
+          "default_value": null,
+          "extraction_hints": ["about", "what", "how", "why", "when"],
+          "validation": null
+        },
+        {
+          "name": "episode_id",
+          "param_type": "NUMBER",
+          "description": "Episode ID to query",
+          "required": false,
+          "default_value": null,
+          "extraction_hints": ["episode", "id", "number"],
+          "validation": null
+        },
+        {
+          "name": "episode_ref",
+          "param_type": "STRING",
+          "description": "Natural reference to episode (latest, yesterday's, etc.)",
+          "required": false,
+          "default_value": null,
+          "extraction_hints": ["latest", "yesterday", "recent", "last"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "{answer}",
+        "error_template": "Could not answer: {error}",
+        "progress_template": "Searching episode content...",
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "analyze-topic",
+      "component_type": "QUERY",
+      "intent": "Analyze a topic across multiple episodes",
+      "invocation": {
+        "primary_phrase": "analyze topic",
+        "alternate_phrases": [
+          "what's being said about",
+          "find discussions about",
+          "analyze mentions of"
+        ],
+        "examples": [
+          "Analyze what podcasts are saying about AI regulation",
+          "What's being said about Anthropic this week?",
+          "Find all discussions about Series A funding"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "topic",
+          "param_type": "STRING",
+          "description": "Topic to analyze across episodes",
+          "required": true,
+          "default_value": null,
+          "extraction_hints": ["about", "topic", "regarding"],
+          "validation": null
+        },
+        {
+          "name": "days",
+          "param_type": "NUMBER",
+          "description": "Number of days to look back",
+          "required": false,
+          "default_value": "7",
+          "extraction_hints": ["days", "week", "past", "last"],
+          "validation": null
+        },
+        {
+          "name": "max_episodes",
+          "param_type": "NUMBER",
+          "description": "Maximum episodes to analyze",
+          "required": false,
+          "default_value": "10",
+          "extraction_hints": ["episodes", "maximum"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Analysis of '{topic}' across {count} episodes:\n{analysis}",
+        "error_template": "Could not analyze topic: {error}",
+        "progress_template": "Analyzing {current}/{total} episodes...",
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "find-trends",
+      "component_type": "QUERY",
+      "intent": "Identify trending topics across episodes",
+      "invocation": {
+        "primary_phrase": "find trending topics",
+        "alternate_phrases": [
+          "what's trending",
+          "show trends",
+          "hot topics"
+        ],
+        "examples": [
+          "What's trending in podcasts this week?",
+          "Find trending topics from the last 14 days",
+          "Show me the hot topics in tech podcasts"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "days",
+          "param_type": "NUMBER",
+          "description": "Number of days to analyze",
+          "required": false,
+          "default_value": "7",
+          "extraction_hints": ["days", "week", "past"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Trending topics from the past {days} days:\n{trends}",
+        "error_template": "Could not identify trends: {error}",
+        "progress_template": "Analyzing episodes for trends...",
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "search-quotes",
+      "component_type": "QUERY",
+      "intent": "Search for quotes containing keywords",
+      "invocation": {
+        "primary_phrase": "search quotes",
+        "alternate_phrases": [
+          "find quotes about",
+          "look for mentions of",
+          "search for"
+        ],
+        "examples": [
+          "Search for quotes about machine learning",
+          "Find quotes mentioning Elon Musk",
+          "Look for mentions of Y Combinator"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "keyword",
+          "param_type": "STRING",
+          "description": "Keyword to search for in quotes",
+          "required": true,
+          "default_value": null,
+          "extraction_hints": ["about", "mentioning", "containing", "for"],
+          "validation": null
+        },
+        {
+          "name": "max_results",
+          "param_type": "NUMBER",
+          "description": "Maximum results to return",
+          "required": false,
+          "default_value": "5",
+          "extraction_hints": ["results", "max", "limit"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Found {count} quotes containing '{keyword}'",
+        "error_template": "Search failed: {error}",
+        "progress_template": null,
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "show-status",
+      "component_type": "QUERY",
+      "intent": "Show processing status of episodes",
+      "invocation": {
+        "primary_phrase": "show status",
+        "alternate_phrases": [
+          "what's the status",
+          "pipeline status",
+          "processing status"
+        ],
+        "examples": [
+          "Show status",
+          "What's the processing status?",
+          "How many episodes are processed?"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [],
+      "feedback": {
+        "success_template": "Processing status:\n- Downloaded: {downloaded}\n- Transcribed: {transcribed}\n- Processed: {processed}",
+        "error_template": "Could not get status: {error}",
+        "progress_template": null,
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "list-episodes",
+      "component_type": "QUERY",
+      "intent": "List available episodes",
+      "invocation": {
+        "primary_phrase": "list episodes",
+        "alternate_phrases": [
+          "show episodes",
+          "what episodes are available",
+          "find episodes"
+        ],
+        "examples": [
+          "List recent episodes",
+          "Show processed episodes",
+          "What episodes from All-In are available?"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "status",
+          "param_type": "STRING",
+          "description": "Filter by status (downloaded, transcribed, processed)",
+          "required": false,
+          "default_value": null,
+          "extraction_hints": ["status", "that are"],
+          "validation": null
+        },
+        {
+          "name": "podcast",
+          "param_type": "STRING",
+          "description": "Filter by podcast name",
+          "required": false,
+          "default_value": null,
+          "extraction_hints": ["from", "podcast"],
+          "validation": null
+        },
+        {
+          "name": "limit",
+          "param_type": "NUMBER",
+          "description": "Maximum episodes to show",
+          "required": false,
+          "default_value": "20",
+          "extraction_hints": ["limit", "max", "top"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Found {count} episodes:\n{episodes_list}",
+        "error_template": "Could not list episodes: {error}",
+        "progress_template": null,
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "episode-details",
+      "component_type": "QUERY",
+      "intent": "Show details about a specific episode",
+      "invocation": {
+        "primary_phrase": "show episode details",
+        "alternate_phrases": [
+          "episode info",
+          "tell me about episode",
+          "details for episode"
+        ],
+        "examples": [
+          "Show details for episode 42",
+          "Tell me about the latest episode",
+          "What's in episode 15?"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "episode_id",
+          "param_type": "NUMBER",
+          "description": "Episode ID to show details for",
+          "required": false,
+          "default_value": null,
+          "extraction_hints": ["episode", "id", "number"],
+          "validation": null
+        },
+        {
+          "name": "episode_ref",
+          "param_type": "STRING",
+          "description": "Natural reference to episode",
+          "required": false,
+          "default_value": null,
+          "extraction_hints": ["latest", "last", "most recent"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Episode {id}: {title}\n- Podcast: {podcast}\n- Date: {date}\n- Status: {status}\n- Duration: {duration}\n{summary_preview}",
+        "error_template": "Episode not found: {error}",
+        "progress_template": null,
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "start-chat",
+      "component_type": "NAVIGATION",
+      "intent": "Start interactive chat about an episode",
+      "invocation": {
+        "primary_phrase": "chat about episode",
+        "alternate_phrases": [
+          "let's discuss episode",
+          "start conversation about",
+          "interactive mode"
+        ],
+        "examples": [
+          "Chat about episode 42",
+          "Let's discuss the latest episode",
+          "Start a conversation about yesterday's All-In"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "episode_id",
+          "param_type": "NUMBER",
+          "description": "Episode ID to chat about",
+          "required": false,
+          "default_value": null,
+          "extraction_hints": ["episode", "id"],
+          "validation": null
+        },
+        {
+          "name": "episode_ref",
+          "param_type": "STRING",
+          "description": "Natural reference to episode",
+          "required": false,
+          "default_value": null,
+          "extraction_hints": ["latest", "yesterday", "last"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Starting chat session for episode '{title}'. Ask me anything!",
+        "error_template": "Could not start chat: {error}",
+        "progress_template": null,
+        "confirmation_required": false,
+        "confirmation_prompt": null
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "run-pipeline",
+      "component_type": "ACTION",
+      "intent": "Run the full processing pipeline",
+      "invocation": {
+        "primary_phrase": "process podcasts",
+        "alternate_phrases": [
+          "run pipeline",
+          "process everything",
+          "full processing"
+        ],
+        "examples": [
+          "Process today's podcasts",
+          "Run the full pipeline",
+          "Fetch, transcribe, and summarize new episodes"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "max_episodes",
+          "param_type": "NUMBER",
+          "description": "Maximum episodes per feed",
+          "required": false,
+          "default_value": "5",
+          "extraction_hints": ["episodes", "max", "limit"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Pipeline complete! Processed {count} episodes through all stages.",
+        "error_template": "Pipeline failed at {stage}: {error}",
+        "progress_template": "Running {stage}...",
+        "confirmation_required": true,
+        "confirmation_prompt": "This will fetch, transcribe, and summarize all new episodes. Continue?"
+      },
+      "accessibility": null
+    },
+    {
+      "component_id": "cleanup-files",
+      "component_type": "ACTION",
+      "intent": "Clean up old local files",
+      "invocation": {
+        "primary_phrase": "cleanup files",
+        "alternate_phrases": [
+          "clean up old files",
+          "remove old audio",
+          "free up space"
+        ],
+        "examples": [
+          "Clean up old audio files",
+          "Free up disk space",
+          "Remove processed audio files"
+        ],
+        "context_requirements": null
+      },
+      "parameters": [
+        {
+          "name": "dry_run",
+          "param_type": "BOOLEAN",
+          "description": "Preview without deleting",
+          "required": false,
+          "default_value": "false",
+          "extraction_hints": ["preview", "dry run", "show what"],
+          "validation": null
+        }
+      ],
+      "feedback": {
+        "success_template": "Cleaned up {count} files, freed {size} of disk space",
+        "error_template": "Cleanup failed: {error}",
+        "progress_template": null,
+        "confirmation_required": true,
+        "confirmation_prompt": "This will delete old local audio files. Continue?"
+      },
+      "accessibility": null
+    }
+  ],
+  "flows": [
+    {
+      "flow_id": "daily-processing",
+      "name": "Daily Podcast Processing",
+      "description": "Complete workflow for processing daily podcasts",
+      "trigger": {
+        "trigger_type": "EXPLICIT",
+        "trigger_phrase": "process today's podcasts"
+      },
+      "steps": [
+        {
+          "step_id": "fetch",
+          "step_type": "INVOKE",
+          "component_ref": "fetch-episodes",
+          "prompt_template": null,
+          "conditions": null,
+          "next_steps": ["transcribe"]
+        },
+        {
+          "step_id": "transcribe",
+          "step_type": "INVOKE",
+          "component_ref": "transcribe-episodes",
+          "prompt_template": null,
+          "conditions": null,
+          "next_steps": ["summarize"]
+        },
+        {
+          "step_id": "summarize",
+          "step_type": "INVOKE",
+          "component_ref": "generate-summaries",
+          "prompt_template": null,
+          "conditions": null,
+          "next_steps": ["export"]
+        },
+        {
+          "step_id": "export",
+          "step_type": "INVOKE",
+          "component_ref": "export-digest",
+          "prompt_template": null,
+          "conditions": null,
+          "next_steps": []
+        }
+      ],
+      "fallback_responses": ["I'll need to stop here - there was an issue with the pipeline."]
+    },
+    {
+      "flow_id": "research-topic",
+      "name": "Topic Research",
+      "description": "Research a topic across podcast episodes",
+      "trigger": {
+        "trigger_type": "EXPLICIT",
+        "trigger_phrase": "research topic"
+      },
+      "steps": [
+        {
+          "step_id": "find-trends",
+          "step_type": "INVOKE",
+          "component_ref": "find-trends",
+          "prompt_template": null,
+          "conditions": null,
+          "next_steps": ["analyze"]
+        },
+        {
+          "step_id": "analyze",
+          "step_type": "PROMPT",
+          "component_ref": null,
+          "prompt_template": "Would you like me to analyze any of these topics in more detail?",
+          "conditions": null,
+          "next_steps": ["deep-dive"]
+        },
+        {
+          "step_id": "deep-dive",
+          "step_type": "INVOKE",
+          "component_ref": "analyze-topic",
+          "prompt_template": null,
+          "conditions": null,
+          "next_steps": []
+        }
+      ],
+      "fallback_responses": ["I couldn't find relevant content for that topic."]
+    }
+  ],
+  "entities": [
+    {
+      "entity_name": "Episode",
+      "description": "A podcast episode in the system",
+      "attributes": [
+        {
+          "attribute_name": "id",
+          "attribute_type": "NUMBER",
+          "description": "Unique episode identifier"
+        },
+        {
+          "attribute_name": "title",
+          "attribute_type": "STRING",
+          "description": "Episode title"
+        },
+        {
+          "attribute_name": "podcast",
+          "attribute_type": "STRING",
+          "description": "Parent podcast name"
+        },
+        {
+          "attribute_name": "date",
+          "attribute_type": "DATE",
+          "description": "Publication date"
+        },
+        {
+          "attribute_name": "status",
+          "attribute_type": "STRING",
+          "description": "Processing status"
+        },
+        {
+          "attribute_name": "duration",
+          "attribute_type": "NUMBER",
+          "description": "Duration in seconds"
+        }
+      ]
+    },
+    {
+      "entity_name": "Podcast",
+      "description": "A podcast feed",
+      "attributes": [
+        {
+          "attribute_name": "name",
+          "attribute_type": "STRING",
+          "description": "Podcast name"
+        },
+        {
+          "attribute_name": "feed_url",
+          "attribute_type": "STRING",
+          "description": "RSS feed URL"
+        }
+      ]
+    },
+    {
+      "entity_name": "Summary",
+      "description": "AI-generated episode summary",
+      "attributes": [
+        {
+          "attribute_name": "key_topics",
+          "attribute_type": "LIST",
+          "description": "Main topics discussed"
+        },
+        {
+          "attribute_name": "themes",
+          "attribute_type": "LIST",
+          "description": "Overarching themes"
+        },
+        {
+          "attribute_name": "quotes",
+          "attribute_type": "LIST",
+          "description": "Notable quotes"
+        },
+        {
+          "attribute_name": "takeaways",
+          "attribute_type": "LIST",
+          "description": "Key takeaways"
+        }
+      ]
+    }
+  ],
+  "global_context": {
+    "session_variables": ["current_episode_id", "last_query_topic", "selected_podcast"],
+    "persistent_variables": ["preferred_llm_provider", "preferred_export_format"],
+    "context_hints": [
+      "Remember the episode being discussed",
+      "Track the current topic of conversation",
+      "Maintain awareness of processing pipeline state"
+    ]
+  }
+}
