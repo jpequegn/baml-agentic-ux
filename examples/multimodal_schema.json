@@ -1,0 +1,680 @@
+{
+  "schema_id": "multimodal-assistant-v1",
+  "name": "Multi-Modal Assistant LUI",
+  "description": "A Language User Interface demonstrating multi-modal output capabilities including voice, visual, and text responses with accessibility support",
+  "version": "1.0.0",
+  "domain": {
+    "domain_name": "multi-modal-interaction",
+    "subdomain": "adaptive-responses",
+    "description": "Adaptive multi-modal responses that adjust to user preferences, device capabilities, and environmental context",
+    "key_concepts": ["multi-modal", "accessibility", "voice", "visual", "adaptive-ui"]
+  },
+  "modality_config": {
+    "supported_modalities": ["TEXT", "VOICE", "VISUAL", "HYBRID"],
+    "default_modality": "HYBRID",
+    "fallback_chain": ["HYBRID", "VISUAL", "TEXT", "VOICE"],
+    "voice_config": {
+      "default_voice_id": "assistant-friendly",
+      "default_gender": "NEUTRAL",
+      "default_speaking_style": "CONVERSATIONAL",
+      "ssml_enabled": true,
+      "prosody_defaults": {
+        "rate": "MEDIUM",
+        "pitch": "MEDIUM",
+        "volume": "MEDIUM"
+      }
+    },
+    "visual_config": {
+      "adaptive_cards_enabled": true,
+      "default_card_version": "1.5",
+      "max_card_width": 400,
+      "fallback_to_text": true
+    },
+    "accessibility_config": {
+      "wcag_level": "AA",
+      "aria_live_default": "POLITE",
+      "screen_reader_optimized": true,
+      "high_contrast_available": true,
+      "reduced_motion_support": true
+    }
+  },
+  "components": [
+    {
+      "component_id": "greeting",
+      "component_type": "FEEDBACK",
+      "intent": "Greet the user",
+      "invocation": {
+        "primary_phrase": "hello",
+        "alternate_phrases": ["hi", "hey", "good morning", "good afternoon"],
+        "examples": [
+          "Hello!",
+          "Hi there",
+          "Good morning!"
+        ]
+      },
+      "multi_modal_response": {
+        "modalities": ["TEXT", "VOICE", "VISUAL"],
+        "text": {
+          "primary": "Hello! I'm your multi-modal assistant. I can respond in text, voice, or visual formats.",
+          "formats": ["PLAIN", "MARKDOWN"]
+        },
+        "voice": {
+          "ssml": "<speak><prosody rate=\"medium\" pitch=\"medium\">Hello! <break strength=\"weak\"/> I'm your multi-modal assistant. <emphasis level=\"moderate\">I can respond in text, voice, or visual formats.</emphasis></prosody></speak>",
+          "speaking_style": "FRIENDLY",
+          "emotion": "CHEERFUL"
+        },
+        "visual": {
+          "type": "CARD",
+          "adaptive_card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "👋 Welcome!",
+                "size": "Large",
+                "weight": "Bolder",
+                "color": "Accent"
+              },
+              {
+                "type": "TextBlock",
+                "text": "I'm your multi-modal assistant. I can respond in text, voice, or visual formats.",
+                "wrap": true
+              }
+            ],
+            "actions": [
+              {
+                "type": "Action.Submit",
+                "title": "Get Started",
+                "data": {"action": "start"}
+              }
+            ]
+          }
+        },
+        "accessibility": {
+          "aria_label": "Welcome message from your multi-modal assistant",
+          "aria_live": "POLITE",
+          "reading_level": "BASIC",
+          "cognitive_load": "LOW"
+        }
+      },
+      "feedback": {
+        "success_template": "Hello! I'm your multi-modal assistant.",
+        "error_template": "Could not load greeting: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "weather-query",
+      "component_type": "QUERY",
+      "intent": "Get weather information",
+      "invocation": {
+        "primary_phrase": "weather",
+        "alternate_phrases": ["what's the weather", "temperature", "forecast"],
+        "examples": [
+          "What's the weather like?",
+          "Is it going to rain today?",
+          "Tell me the temperature"
+        ]
+      },
+      "multi_modal_response": {
+        "modalities": ["HYBRID"],
+        "text": {
+          "primary": "Current weather: {temperature}°F, {conditions}. Forecast: {forecast}",
+          "formats": ["PLAIN", "MARKDOWN"]
+        },
+        "voice": {
+          "ssml": "<speak><prosody rate=\"medium\">Currently it's <say-as interpret-as=\"unit\">{temperature} degrees Fahrenheit</say-as> and {conditions}. <break strength=\"medium\"/> {forecast_spoken}</prosody></speak>",
+          "speaking_style": "INFORMATIVE"
+        },
+        "visual": {
+          "type": "CARD",
+          "adaptive_card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "ColumnSet",
+                "columns": [
+                  {
+                    "type": "Column",
+                    "width": "auto",
+                    "items": [
+                      {
+                        "type": "Image",
+                        "url": "{weather_icon_url}",
+                        "size": "Medium",
+                        "altText": "{conditions}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Column",
+                    "width": "stretch",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "text": "{temperature}°F",
+                        "size": "ExtraLarge",
+                        "weight": "Bolder"
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "{conditions}",
+                        "spacing": "None"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "FactSet",
+                "facts": [
+                  {"title": "Humidity", "value": "{humidity}%"},
+                  {"title": "Wind", "value": "{wind_speed} mph"},
+                  {"title": "Feels Like", "value": "{feels_like}°F"}
+                ]
+              }
+            ]
+          }
+        },
+        "accessibility": {
+          "aria_label": "Weather information: {temperature} degrees, {conditions}",
+          "aria_live": "POLITE",
+          "reading_level": "BASIC",
+          "cognitive_load": "LOW"
+        }
+      },
+      "modality_selection": {
+        "rules": [
+          {
+            "condition": "device.has_screen == false",
+            "preferred_modality": "VOICE",
+            "reason": "No screen available, using voice output"
+          },
+          {
+            "condition": "environment.noise_level == 'HIGH'",
+            "preferred_modality": "VISUAL",
+            "reason": "Noisy environment, visual preferred"
+          },
+          {
+            "condition": "user.accessibility_needs includes 'BLIND'",
+            "preferred_modality": "VOICE",
+            "reason": "User requires audio output"
+          },
+          {
+            "condition": "user.accessibility_needs includes 'DEAF'",
+            "preferred_modality": "VISUAL",
+            "reason": "User requires visual output"
+          }
+        ]
+      },
+      "feedback": {
+        "success_template": "Weather information retrieved",
+        "error_template": "Could not get weather: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "timer-set",
+      "component_type": "ACTION",
+      "intent": "Set a timer",
+      "invocation": {
+        "primary_phrase": "set timer",
+        "alternate_phrases": ["timer for", "remind me in", "countdown"],
+        "examples": [
+          "Set a timer for 5 minutes",
+          "Timer for 30 seconds",
+          "Remind me in 10 minutes"
+        ]
+      },
+      "multi_modal_response": {
+        "modalities": ["TEXT", "VOICE"],
+        "text": {
+          "primary": "Timer set for {duration}. I'll notify you when it's done.",
+          "formats": ["PLAIN"]
+        },
+        "voice": {
+          "ssml": "<speak><prosody rate=\"medium\">Timer set for <say-as interpret-as=\"time\">{duration}</say-as>. <audio src=\"{timer_start_sound}\"/> <break strength=\"weak\"/> I'll notify you when it's done.</prosody></speak>",
+          "speaking_style": "CONFIRMATORY"
+        },
+        "accessibility": {
+          "aria_label": "Timer started for {duration}",
+          "aria_live": "ASSERTIVE",
+          "reading_level": "BASIC",
+          "cognitive_load": "MINIMAL"
+        }
+      },
+      "feedback": {
+        "success_template": "Timer set for {duration}",
+        "error_template": "Could not set timer: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "timer-complete",
+      "component_type": "FEEDBACK",
+      "intent": "Notify user when timer completes",
+      "multi_modal_response": {
+        "modalities": ["VOICE", "VISUAL"],
+        "voice": {
+          "ssml": "<speak><audio src=\"{timer_alarm_sound}\"/><prosody rate=\"medium\" volume=\"loud\"><emphasis level=\"strong\">Your timer is complete!</emphasis></prosody></speak>",
+          "speaking_style": "URGENT"
+        },
+        "visual": {
+          "type": "CARD",
+          "adaptive_card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "⏰ Timer Complete!",
+                "size": "Large",
+                "weight": "Bolder",
+                "color": "Attention"
+              },
+              {
+                "type": "TextBlock",
+                "text": "Your {duration} timer has finished.",
+                "wrap": true
+              }
+            ],
+            "actions": [
+              {
+                "type": "Action.Submit",
+                "title": "Dismiss",
+                "data": {"action": "dismiss_timer"}
+              },
+              {
+                "type": "Action.Submit",
+                "title": "Restart",
+                "data": {"action": "restart_timer"}
+              }
+            ]
+          }
+        },
+        "accessibility": {
+          "aria_label": "Timer complete notification",
+          "aria_live": "ASSERTIVE",
+          "reading_level": "BASIC",
+          "cognitive_load": "LOW"
+        }
+      },
+      "feedback": {
+        "success_template": "Timer complete!",
+        "error_template": "Timer notification failed",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "data-visualization",
+      "component_type": "QUERY",
+      "intent": "Display data in visual format",
+      "invocation": {
+        "primary_phrase": "show chart",
+        "alternate_phrases": ["visualize data", "display graph", "show statistics"],
+        "examples": [
+          "Show me a chart of my expenses",
+          "Visualize this data",
+          "Display the statistics"
+        ]
+      },
+      "multi_modal_response": {
+        "modalities": ["VISUAL"],
+        "visual": {
+          "type": "CHART",
+          "dimensions": {
+            "width": 400,
+            "height": 300,
+            "unit": "pixels"
+          },
+          "chart_config": {
+            "chart_type": "{chart_type}",
+            "title": "{chart_title}",
+            "x_axis_label": "{x_label}",
+            "y_axis_label": "{y_label}"
+          }
+        },
+        "text_fallback": {
+          "primary": "Data summary: {data_summary}",
+          "reason": "Chart cannot be displayed on this device"
+        },
+        "voice_fallback": {
+          "ssml": "<speak><prosody rate=\"slow\">{data_spoken_summary}</prosody></speak>",
+          "reason": "Providing spoken summary of visual data"
+        },
+        "accessibility": {
+          "aria_label": "Chart showing {chart_title}: {chart_summary}",
+          "aria_live": "POLITE",
+          "reading_level": "INTERMEDIATE",
+          "cognitive_load": "MODERATE",
+          "alt_text": "{chart_alt_text}"
+        }
+      },
+      "graceful_degradation": {
+        "fallback_chain": ["VISUAL", "TEXT", "VOICE"],
+        "degradation_rules": [
+          {
+            "condition": "device.has_screen == false",
+            "fallback": "voice_fallback",
+            "notification": "Chart is not available. Here's a spoken summary instead."
+          },
+          {
+            "condition": "device.screen_size == 'SMALL'",
+            "fallback": "text_fallback",
+            "notification": "Displaying text summary for small screen."
+          }
+        ]
+      },
+      "feedback": {
+        "success_template": "Chart displayed",
+        "error_template": "Could not display chart: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "settings",
+      "component_type": "NAVIGATION",
+      "intent": "Access settings",
+      "invocation": {
+        "primary_phrase": "settings",
+        "alternate_phrases": ["preferences", "configure", "options"],
+        "examples": [
+          "Open settings",
+          "Change my preferences",
+          "Voice settings"
+        ]
+      },
+      "multi_modal_response": {
+        "modalities": ["VISUAL"],
+        "visual": {
+          "type": "FORM",
+          "adaptive_card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "⚙️ Settings",
+                "size": "Large",
+                "weight": "Bolder"
+              },
+              {
+                "type": "Container",
+                "style": "emphasis",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Response Modality",
+                    "weight": "Bolder"
+                  },
+                  {
+                    "type": "Input.ChoiceSet",
+                    "id": "modality_preference",
+                    "style": "compact",
+                    "value": "HYBRID",
+                    "choices": [
+                      {"title": "Text Only", "value": "TEXT"},
+                      {"title": "Voice Only", "value": "VOICE"},
+                      {"title": "Visual Only", "value": "VISUAL"},
+                      {"title": "Hybrid (Recommended)", "value": "HYBRID"}
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Voice Settings",
+                    "weight": "Bolder"
+                  },
+                  {
+                    "type": "Input.ChoiceSet",
+                    "id": "voice_style",
+                    "style": "compact",
+                    "value": "CONVERSATIONAL",
+                    "choices": [
+                      {"title": "Conversational", "value": "CONVERSATIONAL"},
+                      {"title": "Professional", "value": "PROFESSIONAL"},
+                      {"title": "Friendly", "value": "FRIENDLY"}
+                    ]
+                  },
+                  {
+                    "type": "Input.Toggle",
+                    "id": "ssml_enabled",
+                    "title": "Enable advanced voice features (SSML)",
+                    "value": "true"
+                  }
+                ]
+              },
+              {
+                "type": "Container",
+                "items": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Accessibility",
+                    "weight": "Bolder"
+                  },
+                  {
+                    "type": "Input.Toggle",
+                    "id": "screen_reader_mode",
+                    "title": "Screen reader optimized",
+                    "value": "false"
+                  },
+                  {
+                    "type": "Input.Toggle",
+                    "id": "high_contrast",
+                    "title": "High contrast mode",
+                    "value": "false"
+                  },
+                  {
+                    "type": "Input.Toggle",
+                    "id": "reduced_motion",
+                    "title": "Reduce motion",
+                    "value": "false"
+                  }
+                ]
+              }
+            ],
+            "actions": [
+              {
+                "type": "Action.Submit",
+                "title": "Save Settings",
+                "data": {"action": "save_settings"}
+              },
+              {
+                "type": "Action.Submit",
+                "title": "Cancel",
+                "data": {"action": "cancel"}
+              }
+            ]
+          }
+        },
+        "accessibility": {
+          "aria_label": "Settings panel with modality, voice, and accessibility options",
+          "aria_live": "POLITE",
+          "reading_level": "INTERMEDIATE",
+          "cognitive_load": "MODERATE"
+        }
+      },
+      "feedback": {
+        "success_template": "Settings opened",
+        "error_template": "Could not open settings: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "error-notification",
+      "component_type": "FEEDBACK",
+      "intent": "Display error message to user",
+      "multi_modal_response": {
+        "modalities": ["TEXT", "VOICE", "VISUAL"],
+        "text": {
+          "primary": "Sorry, something went wrong: {error_message}",
+          "formats": ["PLAIN"]
+        },
+        "voice": {
+          "ssml": "<speak><prosody rate=\"slow\" pitch=\"low\">Sorry, <break strength=\"weak\"/> something went wrong. <break strength=\"medium\"/> {error_message_spoken}</prosody></speak>",
+          "speaking_style": "EMPATHETIC"
+        },
+        "visual": {
+          "type": "CARD",
+          "adaptive_card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "⚠️ Error",
+                "size": "Medium",
+                "weight": "Bolder",
+                "color": "Attention"
+              },
+              {
+                "type": "TextBlock",
+                "text": "{error_message}",
+                "wrap": true
+              },
+              {
+                "type": "TextBlock",
+                "text": "What you can try:",
+                "weight": "Bolder",
+                "spacing": "Medium"
+              },
+              {
+                "type": "TextBlock",
+                "text": "• Try your request again\n• Rephrase your request\n• Check your connection",
+                "wrap": true
+              }
+            ],
+            "actions": [
+              {
+                "type": "Action.Submit",
+                "title": "Try Again",
+                "data": {"action": "retry"}
+              },
+              {
+                "type": "Action.Submit",
+                "title": "Get Help",
+                "data": {"action": "help"}
+              }
+            ]
+          }
+        },
+        "accessibility": {
+          "aria_label": "Error notification: {error_message}",
+          "aria_live": "ASSERTIVE",
+          "reading_level": "BASIC",
+          "cognitive_load": "LOW"
+        }
+      },
+      "graceful_degradation": {
+        "error_handling": {
+          "recovery_tier": "GUIDED_REPAIR",
+          "notification_style": "PROMINENT",
+          "user_guidance": true
+        }
+      },
+      "feedback": {
+        "success_template": "Error displayed",
+        "error_template": "Could not display error",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "progress-notification",
+      "component_type": "FEEDBACK",
+      "intent": "Show progress of long-running operation",
+      "multi_modal_response": {
+        "modalities": ["VISUAL", "TEXT"],
+        "visual": {
+          "type": "CARD",
+          "adaptive_card": {
+            "type": "AdaptiveCard",
+            "version": "1.5",
+            "body": [
+              {
+                "type": "TextBlock",
+                "text": "{operation_name}",
+                "weight": "Bolder"
+              },
+              {
+                "type": "TextBlock",
+                "text": "{progress_message}",
+                "spacing": "Small"
+              },
+              {
+                "type": "ColumnSet",
+                "columns": [
+                  {
+                    "type": "Column",
+                    "width": "stretch",
+                    "items": [
+                      {
+                        "type": "TextBlock",
+                        "text": "{progress_percent}% complete",
+                        "horizontalAlignment": "Right"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "text": {
+          "primary": "{operation_name}: {progress_percent}% complete. {progress_message}",
+          "formats": ["PLAIN"]
+        },
+        "accessibility": {
+          "aria_label": "Progress: {operation_name} is {progress_percent} percent complete",
+          "aria_live": "POLITE",
+          "reading_level": "BASIC",
+          "cognitive_load": "MINIMAL"
+        }
+      },
+      "feedback": {
+        "success_template": "Progress: {progress_percent}%",
+        "error_template": "Progress update failed",
+        "confirmation_required": false
+      }
+    }
+  ],
+  "accessibility_requirements": {
+    "wcag_compliance": {
+      "level": "AA",
+      "categories": ["PERCEIVABLE", "OPERABLE", "UNDERSTANDABLE", "ROBUST"]
+    },
+    "supported_needs": [
+      "BLIND",
+      "LOW_VISION",
+      "DEAF",
+      "HARD_OF_HEARING",
+      "MOTOR_IMPAIRED",
+      "COGNITIVE"
+    ],
+    "default_accommodations": {
+      "screen_reader_support": true,
+      "keyboard_navigation": true,
+      "focus_indicators": true,
+      "skip_links": true,
+      "alt_text_required": true
+    }
+  },
+  "graceful_degradation_config": {
+    "default_fallback_chain": ["HYBRID", "VISUAL", "TEXT", "VOICE"],
+    "error_handling": {
+      "max_retries": 3,
+      "retry_delay_ms": 1000,
+      "default_recovery_tier": "GUIDED_REPAIR"
+    },
+    "capability_detection": {
+      "auto_detect_device": true,
+      "auto_detect_environment": true,
+      "user_preference_priority": true
+    }
+  }
+}
