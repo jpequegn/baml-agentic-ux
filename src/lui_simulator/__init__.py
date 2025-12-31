@@ -25,6 +25,18 @@ from .expertise import (
     LevelThreshold,
     ColdStartConfig,
 )
+from .templates import (
+    TemplateManager,
+    TemplatePurpose,
+    TemplateVariant,
+    AdaptiveTemplate,
+    TemplateSelectionContext,
+    RenderedTemplate,
+    TemplateLibrary,
+    VerbosityMapping,
+    TemplateCustomization,
+    ErrorTemplateDetails,
+)
 
 __all__ = [
     "LUISimulator",
@@ -52,4 +64,15 @@ __all__ = [
     "ExpertiseLevel",
     "LevelThreshold",
     "ColdStartConfig",
+    # Adaptive templates
+    "TemplateManager",
+    "TemplatePurpose",
+    "TemplateVariant",
+    "AdaptiveTemplate",
+    "TemplateSelectionContext",
+    "RenderedTemplate",
+    "TemplateLibrary",
+    "VerbosityMapping",
+    "TemplateCustomization",
+    "ErrorTemplateDetails",
 ]
