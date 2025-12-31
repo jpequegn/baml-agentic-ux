@@ -34,6 +34,18 @@ from .transitions import (
     TransitionDirection,
     RollbackResult,
 )
+from .templates import (
+    TemplateManager,
+    TemplatePurpose,
+    TemplateVariant,
+    AdaptiveTemplate,
+    TemplateSelectionContext,
+    RenderedTemplate,
+    TemplateLibrary,
+    VerbosityMapping,
+    TemplateCustomization,
+    ErrorTemplateDetails,
+)
 
 __all__ = [
     "LUISimulator",
@@ -69,4 +81,15 @@ __all__ = [
     "TransitionRecord",
     "TransitionDirection",
     "RollbackResult",
+    # Adaptive templates
+    "TemplateManager",
+    "TemplatePurpose",
+    "TemplateVariant",
+    "AdaptiveTemplate",
+    "TemplateSelectionContext",
+    "RenderedTemplate",
+    "TemplateLibrary",
+    "VerbosityMapping",
+    "TemplateCustomization",
+    "ErrorTemplateDetails",
 ]
