@@ -15,6 +15,16 @@ from .metrics import (
     SignalSeverity,
     PrivacyMode,
 )
+from .expertise import (
+    ExpertiseDetector,
+    ExpertiseDetectionConfig,
+    ExpertiseEstimate,
+    ExpertiseFactor,
+    ExpertiseFactorBreakdown,
+    ExpertiseLevel,
+    LevelThreshold,
+    ColdStartConfig,
+)
 from .transitions import (
     TransitionManager,
     TransitionPolicy,
@@ -23,7 +33,6 @@ from .transitions import (
     TransitionRecord,
     TransitionDirection,
     RollbackResult,
-    ExpertiseLevel,
 )
 
 __all__ = [
@@ -43,6 +52,15 @@ __all__ = [
     "TrendDirection",
     "SignalSeverity",
     "PrivacyMode",
+    # Expertise detection
+    "ExpertiseDetector",
+    "ExpertiseDetectionConfig",
+    "ExpertiseEstimate",
+    "ExpertiseFactor",
+    "ExpertiseFactorBreakdown",
+    "ExpertiseLevel",
+    "LevelThreshold",
+    "ColdStartConfig",
     # Level transitions
     "TransitionManager",
     "TransitionPolicy",
@@ -51,5 +69,4 @@ __all__ = [
     "TransitionRecord",
     "TransitionDirection",
     "RollbackResult",
-    "ExpertiseLevel",
 ]

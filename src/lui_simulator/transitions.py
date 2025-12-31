@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional
 
+from .expertise import ExpertiseLevel
 from .metrics import (
     FrustrationSignals,
     InteractionOutcome,
@@ -26,15 +27,6 @@ from .metrics import (
     SignalSeverity,
     TrendDirection,
 )
-
-
-class ExpertiseLevel(Enum):
-    """User expertise level matching BAML ExpertiseLevel enum."""
-    NOVICE = "NOVICE"
-    BEGINNER = "BEGINNER"
-    INTERMEDIATE = "INTERMEDIATE"
-    ADVANCED = "ADVANCED"
-    EXPERT = "EXPERT"
 
 
 class TransitionDirection(Enum):
