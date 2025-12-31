@@ -15,6 +15,16 @@ from .metrics import (
     SignalSeverity,
     PrivacyMode,
 )
+from .expertise import (
+    ExpertiseDetector,
+    ExpertiseDetectionConfig,
+    ExpertiseEstimate,
+    ExpertiseFactor,
+    ExpertiseFactorBreakdown,
+    ExpertiseLevel,
+    LevelThreshold,
+    ColdStartConfig,
+)
 
 __all__ = [
     "LUISimulator",
@@ -33,4 +43,13 @@ __all__ = [
     "TrendDirection",
     "SignalSeverity",
     "PrivacyMode",
+    # Expertise detection
+    "ExpertiseDetector",
+    "ExpertiseDetectionConfig",
+    "ExpertiseEstimate",
+    "ExpertiseFactor",
+    "ExpertiseFactorBreakdown",
+    "ExpertiseLevel",
+    "LevelThreshold",
+    "ColdStartConfig",
 ]
