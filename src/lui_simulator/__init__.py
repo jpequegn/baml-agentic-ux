@@ -46,6 +46,14 @@ from .templates import (
     TemplateCustomization,
     ErrorTemplateDetails,
 )
+from .adaptive_response import (
+    AdaptiveResponseGenerator,
+    AdaptiveResponse,
+    AdaptationSettings,
+    FrustrationIndicators,
+    FrustrationResponse,
+    ResponseModifier,
+)
 
 __all__ = [
     "LUISimulator",
@@ -92,4 +100,11 @@ __all__ = [
     "VerbosityMapping",
     "TemplateCustomization",
     "ErrorTemplateDetails",
+    # Adaptive response generation
+    "AdaptiveResponseGenerator",
+    "AdaptiveResponse",
+    "AdaptationSettings",
+    "FrustrationIndicators",
+    "FrustrationResponse",
+    "ResponseModifier",
 ]
