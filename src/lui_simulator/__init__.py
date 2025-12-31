@@ -25,6 +25,15 @@ from .expertise import (
     LevelThreshold,
     ColdStartConfig,
 )
+from .transitions import (
+    TransitionManager,
+    TransitionPolicy,
+    TransitionDecision,
+    TransitionResult,
+    TransitionRecord,
+    TransitionDirection,
+    RollbackResult,
+)
 from .templates import (
     TemplateManager,
     TemplatePurpose,
@@ -64,6 +73,14 @@ __all__ = [
     "ExpertiseLevel",
     "LevelThreshold",
     "ColdStartConfig",
+    # Level transitions
+    "TransitionManager",
+    "TransitionPolicy",
+    "TransitionDecision",
+    "TransitionResult",
+    "TransitionRecord",
+    "TransitionDirection",
+    "RollbackResult",
     # Adaptive templates
     "TemplateManager",
     "TemplatePurpose",
