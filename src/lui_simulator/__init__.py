@@ -15,6 +15,16 @@ from .metrics import (
     SignalSeverity,
     PrivacyMode,
 )
+from .transitions import (
+    TransitionManager,
+    TransitionPolicy,
+    TransitionDecision,
+    TransitionResult,
+    TransitionRecord,
+    TransitionDirection,
+    RollbackResult,
+    ExpertiseLevel,
+)
 
 __all__ = [
     "LUISimulator",
@@ -33,4 +43,13 @@ __all__ = [
     "TrendDirection",
     "SignalSeverity",
     "PrivacyMode",
+    # Level transitions
+    "TransitionManager",
+    "TransitionPolicy",
+    "TransitionDecision",
+    "TransitionResult",
+    "TransitionRecord",
+    "TransitionDirection",
+    "RollbackResult",
+    "ExpertiseLevel",
 ]
