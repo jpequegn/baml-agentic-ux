@@ -12,19 +12,16 @@ Tests cover:
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pytest
 
 from src.lui_simulator.transitions import (
     ExpertiseLevel,
-    RollbackResult,
     TransitionDecision,
     TransitionDirection,
     TransitionManager,
     TransitionPolicy,
-    TransitionRecord,
-    TransitionResult,
 )
 from src.lui_simulator.metrics import (
     FrustrationSignals,

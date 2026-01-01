@@ -22,10 +22,8 @@ from .expertise import ExpertiseLevel
 from .metrics import (
     FrustrationSignals,
     InteractionOutcome,
-    InteractionRecord,
     MetricsWindow,
     SignalSeverity,
-    TrendDirection,
 )
 
 
@@ -518,20 +516,22 @@ class TransitionManager:
         Returns:
             TransitionResult with execution details.
         """
-        if not decision.should_transition or decision.to_level is None:
+        if not decision.should_transition or decision.to_level is None or decision.direction is None:
             raise ValueError("Cannot execute a decision that says not to transition")
 
         now = datetime.now()
         transition_id = str(uuid.uuid4())
+        direction = decision.direction
+        to_level = decision.to_level
 
         # Create transition record
         record = TransitionRecord(
             transition_id=transition_id,
             user_id=user_id,
             timestamp=now.isoformat() + "Z",
-            direction=decision.direction,
+            direction=direction,
             from_level=decision.from_level,
-            to_level=decision.to_level,
+            to_level=to_level,
             rationale=decision.rationale,
             was_rolled_back=False,
             triggered_by="auto" if not decision.requires_confirmation else "confirmed",
@@ -560,8 +560,8 @@ class TransitionManager:
             transition_id=transition_id,
             executed_at=now.isoformat() + "Z",
             previous_level=decision.from_level,
-            new_level=decision.to_level,
-            direction=decision.direction,
+            new_level=to_level,
+            direction=direction,
             rollback_token=rollback_token,
             rollback_expires_at=rollback_expires_at,
             notification_sent=decision.user_notification is not None,
