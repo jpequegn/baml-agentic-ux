@@ -391,6 +391,52 @@ from .composition_planner import (
     CompositionPlanner,
 )
 
+from .composition_executor import (
+    # Execution status enums
+    ExecutionStatus as CompositionExecutionStatus,  # Alias to avoid conflict with contract_net
+    StepStatus,
+    RecoveryStrategy,
+    CircuitBreakerState,
+    BackoffStrategy,
+    # Configuration types
+    RetryConfig,
+    CircuitBreakerConfig,
+    OrchestrationConfig,
+    # Step execution types
+    StepError,
+    StepMetrics,
+    StepResult,
+    # Composition execution types
+    CompositionError,
+    ExecutionMetrics,
+    RecoveryAttempt,
+    CompositionExecution,
+    # Recovery types
+    PlanChange,
+    ModifiedPlan,
+    CompensationAction,
+    RecoveryPlan,
+    # Request/response types
+    ExecutionParameter,
+    SecretReference,
+    ExecutionInputs,
+    ExecutionContext as CompositionExecutionContext,  # Alias to avoid conflict
+    ExecuteCompositionRequest,
+    ExecuteCompositionResponse,
+    # Circuit breaker types
+    CircuitBreakerStatus,
+    # Execution order types
+    ResourceRequirements,
+    ExecutionWave,
+    ExecutionOrder,
+    # Step executor type
+    StepExecutor,
+    # Circuit breaker class
+    CircuitBreaker,
+    # Executor class
+    CompositionExecutor,
+)
+
 __all__ = [
     # Protocol types
     "ProtocolType",
@@ -748,4 +794,47 @@ __all__ = [
     "PlanValidationResult",
     # Planner class
     "CompositionPlanner",
+    # Execution status enums
+    "CompositionExecutionStatus",
+    "StepStatus",
+    "RecoveryStrategy",
+    "CircuitBreakerState",
+    "BackoffStrategy",
+    # Configuration types
+    "RetryConfig",
+    "CircuitBreakerConfig",
+    "OrchestrationConfig",
+    # Step execution types
+    "StepError",
+    "StepMetrics",
+    "StepResult",
+    # Composition execution types
+    "CompositionError",
+    "ExecutionMetrics",
+    "RecoveryAttempt",
+    "CompositionExecution",
+    # Recovery types
+    "PlanChange",
+    "ModifiedPlan",
+    "CompensationAction",
+    "RecoveryPlan",
+    # Execution request/response types
+    "ExecutionParameter",
+    "SecretReference",
+    "ExecutionInputs",
+    "CompositionExecutionContext",
+    "ExecuteCompositionRequest",
+    "ExecuteCompositionResponse",
+    # Circuit breaker types
+    "CircuitBreakerStatus",
+    # Execution order types
+    "ResourceRequirements",
+    "ExecutionWave",
+    "ExecutionOrder",
+    # Step executor type
+    "StepExecutor",
+    # Circuit breaker class
+    "CircuitBreaker",
+    # Executor class
+    "CompositionExecutor",
 ]
