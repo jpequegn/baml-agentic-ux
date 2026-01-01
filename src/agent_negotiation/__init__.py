@@ -261,6 +261,44 @@ from .conflict_detector import (
     ConflictDetector,
 )
 
+from .schema_transformer import (
+    # Transformation type enums
+    FieldTransformType,
+    DataLossRisk,
+    TransformValidation,
+    ConditionOperator as TransformConditionOperator,
+    TransformComplexity,
+    # Value mapping types
+    MappingEntry,
+    ValueMapping,
+    FormatSpec,
+    TransformCondition,
+    # Field transformation
+    FieldTransformation,
+    # Schema types
+    FieldSpec,
+    SchemaSpec,
+    # Validation types
+    ValidationIssue,
+    CoverageAnalysis,
+    PlanValidation,
+    PlanMetadata,
+    # Transform plan
+    SchemaTransformPlan,
+    # Result types
+    LostField,
+    TruncatedField,
+    PrecisionLossField,
+    DataLossReport,
+    FieldTransformResult,
+    TransformResult,
+    # Request/response types
+    PlanGenerationOptions,
+    ExecutionOptions,
+    # Transformer class
+    SchemaTransformer,
+)
+
 __all__ = [
     # Protocol types
     "ProtocolType",
@@ -497,4 +535,39 @@ __all__ = [
     "ConflictCallback",
     # Conflict detector class
     "ConflictDetector",
+    # Schema transformation enums
+    "FieldTransformType",
+    "DataLossRisk",
+    "TransformValidation",
+    "TransformConditionOperator",
+    "TransformComplexity",
+    # Value mapping types
+    "MappingEntry",
+    "ValueMapping",
+    "FormatSpec",
+    "TransformCondition",
+    # Field transformation
+    "FieldTransformation",
+    # Schema types
+    "FieldSpec",
+    "SchemaSpec",
+    # Validation types
+    "ValidationIssue",
+    "CoverageAnalysis",
+    "PlanValidation",
+    "PlanMetadata",
+    # Transform plan
+    "SchemaTransformPlan",
+    # Transform result types
+    "LostField",
+    "TruncatedField",
+    "PrecisionLossField",
+    "DataLossReport",
+    "FieldTransformResult",
+    "TransformResult",
+    # Transform request/response types
+    "PlanGenerationOptions",
+    "ExecutionOptions",
+    # Transformer class
+    "SchemaTransformer",
 ]
