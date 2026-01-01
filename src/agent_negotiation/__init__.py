@@ -228,6 +228,39 @@ from .contract_net import (
     ContractNetProtocol,
 )
 
+from .conflict_detector import (
+    # Conflict type enums
+    ConflictType,
+    ConflictSeverity,
+    ConflictCategory,
+    ResolutionStrategy,
+    EffortLevel as ConflictEffortLevel,  # Alias to avoid conflict with capability_matcher.EffortLevel
+    # Conflict description types
+    ConflictContext,
+    Conflict,
+    # Resolution types
+    ResolutionRisk,
+    EffortEstimate,
+    ResolutionStep,
+    ResolutionPath,
+    # Conflict analysis types
+    ConflictSeverityCount,
+    ConflictCategoryCount,
+    ConflictTypeCount,
+    ConflictSummary,
+    ConflictAnalysis,
+    # Detection request/response types
+    ConstraintSpec,
+    DetectionOptions,
+    SchemaDefinition as ConflictSchemaDefinition,  # Alias to avoid conflict with contract_net.SchemaDefinition
+    ConflictDetectionRequest,
+    ConflictDetectionResponse,
+    # Callback type
+    ConflictCallback,
+    # Detector class
+    ConflictDetector,
+)
+
 __all__ = [
     # Protocol types
     "ProtocolType",
@@ -434,4 +467,34 @@ __all__ = [
     "BidDecision",
     # Protocol class
     "ContractNetProtocol",
+    # Conflict detection enums
+    "ConflictType",
+    "ConflictSeverity",
+    "ConflictCategory",
+    "ResolutionStrategy",
+    "ConflictEffortLevel",
+    # Conflict description types
+    "ConflictContext",
+    "Conflict",
+    # Resolution types
+    "ResolutionRisk",
+    "EffortEstimate",
+    "ResolutionStep",
+    "ResolutionPath",
+    # Conflict analysis types
+    "ConflictSeverityCount",
+    "ConflictCategoryCount",
+    "ConflictTypeCount",
+    "ConflictSummary",
+    "ConflictAnalysis",
+    # Conflict detection request/response types
+    "ConstraintSpec",
+    "DetectionOptions",
+    "ConflictSchemaDefinition",
+    "ConflictDetectionRequest",
+    "ConflictDetectionResponse",
+    # Conflict callback type
+    "ConflictCallback",
+    # Conflict detector class
+    "ConflictDetector",
 ]
