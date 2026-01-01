@@ -12,7 +12,6 @@ from src.lui_simulator.adaptive_response import (
     FrustrationResponse,
     ResponseModifier,
     DEFAULT_SETTINGS,
-    LEVEL_GUIDELINES,
 )
 from src.lui_simulator.expertise import ExpertiseLevel
 from src.lui_simulator.templates import VerbosityLevel
