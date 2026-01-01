@@ -88,6 +88,49 @@ from .capability_matcher import (
     CapabilityMatcher,
 )
 
+from .proposal_evaluator import (
+    # Enums
+    CapabilityLevel,
+    NegotiationStrategyType,
+    RiskLevel,
+    CapabilityGapType,
+    TermGapType,
+    ChangeType,
+    NegotiationAction,
+    # Capability types
+    RequestedParameter,
+    CapabilityRequest,
+    OfferedParameter,
+    CapabilityOffer,
+    # Policy types
+    MinimumTerms,
+    ScoringWeights,
+    CapabilityPriority,
+    RiskFactorWeights,
+    RiskTolerance,
+    EvaluationPolicy,
+    # Gap analysis types
+    CapabilityGap,
+    TermGap,
+    ConstraintViolation,
+    GapAnalysis,
+    # Scoring types
+    TermScore,
+    ValueScore,
+    BurdenScore,
+    RiskScore,
+    ScoreBreakdown,
+    ProposalScore,
+    # Result types
+    EvaluationDecision,
+    EvaluationRationale,
+    ProposalChange,
+    CounterProposalResult,
+    ProposalEvaluationResult,
+    # Evaluator class
+    ProposalEvaluator,
+)
+
 __all__ = [
     # Protocol types
     "ProtocolType",
@@ -164,4 +207,44 @@ __all__ = [
     "CapabilityMatchResponse",
     # Matcher class
     "CapabilityMatcher",
+    # Proposal evaluation enums
+    "CapabilityLevel",
+    "NegotiationStrategyType",
+    "RiskLevel",
+    "CapabilityGapType",
+    "TermGapType",
+    "ChangeType",
+    "NegotiationAction",
+    # Capability types
+    "RequestedParameter",
+    "CapabilityRequest",
+    "OfferedParameter",
+    "CapabilityOffer",
+    # Policy types
+    "MinimumTerms",
+    "ScoringWeights",
+    "CapabilityPriority",
+    "RiskFactorWeights",
+    "RiskTolerance",
+    "EvaluationPolicy",
+    # Gap analysis types
+    "CapabilityGap",
+    "TermGap",
+    "ConstraintViolation",
+    "GapAnalysis",
+    # Scoring types
+    "TermScore",
+    "ValueScore",
+    "BurdenScore",
+    "RiskScore",
+    "ScoreBreakdown",
+    "ProposalScore",
+    # Result types
+    "EvaluationDecision",
+    "EvaluationRationale",
+    "ProposalChange",
+    "CounterProposalResult",
+    "ProposalEvaluationResult",
+    # Evaluator class
+    "ProposalEvaluator",
 ]
