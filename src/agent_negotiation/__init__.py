@@ -347,6 +347,50 @@ from .conflict_mediator import (
     ConflictMediator,
 )
 
+from .composition_planner import (
+    # Input source enums
+    InputSource,
+    OptimizationGoal,
+    PlanStatus,
+    DependencyType,
+    FailureSeverity,
+    StepExecutionType,
+    # Input binding types
+    InputBinding,
+    CompositionConstraint,
+    # Composition step types
+    StepRetryPolicy,
+    StepCondition,
+    CompositionStep,
+    # Data flow types
+    DataFlowEdge,
+    StepDependency,
+    # Failure mode types
+    FailureMode,
+    RiskAssessment as CompositionRiskAssessment,  # Alias to avoid conflict
+    # Plan types
+    PlanMetadata as CompositionPlanMetadata,  # Alias to avoid conflict
+    CompositionPlan,
+    # Available agent types
+    AvailableCapability,
+    AvailableAgent,
+    # Planning request/response types
+    PlanningPreferences,
+    PlanningContext,
+    PlanCompositionRequest,
+    PlanCompositionResponse,
+    # Optimization types
+    OptimizationMetrics,
+    PlanImprovement as CompositionPlanImprovement,  # Alias to avoid conflict
+    OptimizePlanResponse,
+    # Validation types
+    ValidationError as CompositionValidationError,  # Alias to avoid conflict
+    ValidationWarning as CompositionValidationWarning,  # Alias to avoid conflict
+    PlanValidationResult,
+    # Planner class
+    CompositionPlanner,
+)
+
 __all__ = [
     # Protocol types
     "ProtocolType",
@@ -663,4 +707,45 @@ __all__ = [
     "EscalationCallback",
     # Mediator class
     "ConflictMediator",
+    # Composition planning enums
+    "InputSource",
+    "OptimizationGoal",
+    "PlanStatus",
+    "DependencyType",
+    "FailureSeverity",
+    "StepExecutionType",
+    # Input binding types
+    "InputBinding",
+    "CompositionConstraint",
+    # Composition step types
+    "StepRetryPolicy",
+    "StepCondition",
+    "CompositionStep",
+    # Data flow types
+    "DataFlowEdge",
+    "StepDependency",
+    # Failure mode types
+    "FailureMode",
+    "CompositionRiskAssessment",
+    # Plan types
+    "CompositionPlanMetadata",
+    "CompositionPlan",
+    # Available agent types
+    "AvailableCapability",
+    "AvailableAgent",
+    # Planning request/response types
+    "PlanningPreferences",
+    "PlanningContext",
+    "PlanCompositionRequest",
+    "PlanCompositionResponse",
+    # Optimization types
+    "OptimizationMetrics",
+    "CompositionPlanImprovement",
+    "OptimizePlanResponse",
+    # Validation types
+    "CompositionValidationError",
+    "CompositionValidationWarning",
+    "PlanValidationResult",
+    # Planner class
+    "CompositionPlanner",
 ]
