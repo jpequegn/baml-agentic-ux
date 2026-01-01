@@ -11,7 +11,6 @@ Key Principles:
 - What changes: length, confirmation frequency, examples, technical language
 """
 
-import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
@@ -630,10 +629,10 @@ class TemplateManager:
             expertise_level=variant.expertise_level,
             rendered_content=rendered_content,
             includes_examples=variant.show_examples or (
-                customization and customization.always_show_examples
+                customization is not None and customization.always_show_examples
             ),
             includes_shortcuts=variant.show_shortcuts and not (
-                customization and customization.never_show_shortcuts
+                customization is not None and customization.never_show_shortcuts
             ),
             requires_confirmation=variant.require_confirmation,
             suggested_actions=suggested_actions,
