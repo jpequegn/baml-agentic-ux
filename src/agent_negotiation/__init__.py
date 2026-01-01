@@ -130,6 +130,63 @@ from .negotiation_state import (
     NegotiationStateMachine,
 )
 
+from .contract_net import (
+    # Task enums
+    TaskPriority,
+    TaskConstraintType,
+    CFPUrgency,
+    EvaluationType,
+    CommitmentLevel,
+    ConditionType,
+    RefusalReason,
+    EvaluationRiskLevel,
+    NotificationType,
+    ExecutionStatus,
+    IssueSeverity,
+    ContractNetStatus,
+    # Task specification types
+    TaskConstraint,
+    TaskMetadata,
+    SchemaDefinition,
+    TaskSpecification,
+    # CFP types
+    SelectionCriteria,
+    CFPContext,
+    CallForProposals,
+    # Proposal types
+    CostEstimate,
+    ProposalCondition,
+    ExecutionStep,
+    ExecutionPlan,
+    AgentCapability,
+    ContractProposal,
+    # Refusal types
+    BidRefusal,
+    # Evaluation types
+    CriteriaScore,
+    EvaluatedProposal,
+    EvaluationSummary,
+    BidEvaluation,
+    # Award types
+    SLATerms,
+    AwardedTerms,
+    AgentNotification,
+    ContractAward,
+    # Confirmation types
+    ExecutionCommitment,
+    ContractConfirmation,
+    # Execution types
+    ExecutionIssue,
+    TaskProgressReport,
+    QualityMetrics,
+    TaskExecutionResult,
+    # Session types
+    ContractNetSession,
+    BidDecision,
+    # Protocol class
+    ContractNetProtocol,
+)
+
 __all__ = [
     # Protocol types
     "ProtocolType",
@@ -244,4 +301,58 @@ __all__ = [
     "NegotiationSession",
     # State machine class
     "NegotiationStateMachine",
+    # Contract-Net task enums
+    "TaskPriority",
+    "TaskConstraintType",
+    "CFPUrgency",
+    "EvaluationType",
+    "CommitmentLevel",
+    "ConditionType",
+    "RefusalReason",
+    "EvaluationRiskLevel",
+    "NotificationType",
+    "ExecutionStatus",
+    "IssueSeverity",
+    "ContractNetStatus",
+    # Task specification types
+    "TaskConstraint",
+    "TaskMetadata",
+    "SchemaDefinition",
+    "TaskSpecification",
+    # CFP types
+    "SelectionCriteria",
+    "CFPContext",
+    "CallForProposals",
+    # Contract proposal types
+    "CostEstimate",
+    "ProposalCondition",
+    "ExecutionStep",
+    "ExecutionPlan",
+    "AgentCapability",
+    "ContractProposal",
+    # Refusal types
+    "BidRefusal",
+    # Evaluation types
+    "CriteriaScore",
+    "EvaluatedProposal",
+    "EvaluationSummary",
+    "BidEvaluation",
+    # Award types
+    "SLATerms",
+    "AwardedTerms",
+    "AgentNotification",
+    "ContractAward",
+    # Confirmation types
+    "ExecutionCommitment",
+    "ContractConfirmation",
+    # Execution types
+    "ExecutionIssue",
+    "TaskProgressReport",
+    "QualityMetrics",
+    "TaskExecutionResult",
+    # Session types
+    "ContractNetSession",
+    "BidDecision",
+    # Protocol class
+    "ContractNetProtocol",
 ]
