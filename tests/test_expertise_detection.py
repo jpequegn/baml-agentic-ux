@@ -13,7 +13,7 @@ Tests cover:
 
 import math
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pytest
 
@@ -21,11 +21,9 @@ from src.lui_simulator.expertise import (
     ColdStartConfig,
     ExpertiseDetectionConfig,
     ExpertiseDetector,
-    ExpertiseEstimate,
     ExpertiseFactor,
     ExpertiseFactorBreakdown,
     ExpertiseLevel,
-    LevelThreshold,
 )
 from src.lui_simulator.metrics import (
     InteractionOutcome,
@@ -675,7 +673,6 @@ class TestLevelTransitions:
 
         # Start at intermediate level
         estimate1 = detector.estimate_expertise(create_intermediate_interactions(20))
-        initial_level = estimate1.estimated_level
 
         # Improve to expert level over time
         for _ in range(5):
