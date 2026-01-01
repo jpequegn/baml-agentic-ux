@@ -11,6 +11,9 @@ from enum import Enum
 from typing import Optional, List, Dict, Any, Callable
 import uuid
 
+# Import shared enums from negotiation_state to avoid duplication
+from .negotiation_state import NegotiationAction, RiskLevel
+
 
 # ============================================
 # Enums
@@ -33,14 +36,6 @@ class NegotiationStrategyType(Enum):
     PRINCIPLED = "principled"
     ACCOMMODATING = "accommodating"
     AVOIDING = "avoiding"
-
-
-class RiskLevel(Enum):
-    """Risk level enumeration."""
-    LOW = "low"
-    MODERATE = "moderate"
-    HIGH = "high"
-    CRITICAL = "critical"
 
 
 class CapabilityGapType(Enum):
@@ -69,14 +64,7 @@ class ChangeType(Enum):
     MODIFICATION = "modification"
 
 
-class NegotiationAction(Enum):
-    """Actions that can be taken in a negotiation."""
-    PROPOSE = "propose"
-    COUNTER = "counter"
-    ACCEPT = "accept"
-    REJECT = "reject"
-    WITHDRAW = "withdraw"
-    TIMEOUT = "timeout"
+# NegotiationAction and RiskLevel are imported from negotiation_state
 
 
 # ============================================
