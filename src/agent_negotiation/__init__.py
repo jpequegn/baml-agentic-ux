@@ -63,6 +63,31 @@ from .capability_registry import (
     CapabilityRegistry,
 )
 
+from .capability_matcher import (
+    # Transformation types
+    TransformationDirection,
+    TransformationType,
+    TransformationComplexity,
+    SchemaTransformation,
+    PropertyMatch,
+    SchemaCompatibility,
+    # Constraint satisfaction
+    ConstraintSatisfaction,
+    # Adaptation suggestions
+    SuggestionType,
+    SuggestionPriority,
+    EffortLevel,
+    AdaptationSuggestion,
+    # Capability matching
+    CapabilityDetailedMatch,
+    CapabilityMatchResult,
+    MatchOptions,
+    BestMatch,
+    CapabilityMatchResponse,
+    # Matcher class
+    CapabilityMatcher,
+)
+
 __all__ = [
     # Protocol types
     "ProtocolType",
@@ -117,4 +142,26 @@ __all__ = [
     "CapabilityIndex",
     # Registry class
     "CapabilityRegistry",
+    # Transformation types
+    "TransformationDirection",
+    "TransformationType",
+    "TransformationComplexity",
+    "SchemaTransformation",
+    "PropertyMatch",
+    "SchemaCompatibility",
+    # Constraint satisfaction
+    "ConstraintSatisfaction",
+    # Adaptation suggestions
+    "SuggestionType",
+    "SuggestionPriority",
+    "EffortLevel",
+    "AdaptationSuggestion",
+    # Capability matching
+    "CapabilityDetailedMatch",
+    "CapabilityMatchResult",
+    "MatchOptions",
+    "BestMatch",
+    "CapabilityMatchResponse",
+    # Matcher class
+    "CapabilityMatcher",
 ]
