@@ -23,7 +23,6 @@ Uses Exponential Moving Average (EMA) with alpha=0.3 for score smoothing.
 import math
 import statistics
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from typing import Optional
 
@@ -638,7 +637,6 @@ class ExpertiseDetector:
             return None, None
 
         current_level = self._current_estimate.estimated_level
-        current_score = self._current_estimate.expertise_score
 
         if new_level == current_level:
             return "MAINTAIN", "Score within current level range"
@@ -682,15 +680,15 @@ class ExpertiseDetector:
         """Create a default estimate for cold start scenarios."""
         config = self.config.cold_start
 
-        # Default factor breakdown
-        default_factor = lambda name, weight: ExpertiseFactor(
-            factor_name=name,
-            weight=weight,
-            raw_value=config.default_score,
-            weighted_value=config.default_score * weight,
-            confidence=config.default_confidence,
-            evidence=["Cold start - using defaults"],
-        )
+        def default_factor(name: str, weight: float) -> ExpertiseFactor:
+            return ExpertiseFactor(
+                factor_name=name,
+                weight=weight,
+                raw_value=config.default_score,
+                weighted_value=config.default_score * weight,
+                confidence=config.default_confidence,
+                evidence=["Cold start - using defaults"],
+            )
 
         factor_breakdown = ExpertiseFactorBreakdown(
             command_fluency=default_factor("command_fluency", self.config.command_fluency_weight),
