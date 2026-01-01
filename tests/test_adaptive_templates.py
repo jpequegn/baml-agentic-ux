@@ -4,7 +4,6 @@ Issue #47 - Phase 2: Adaptive Interface Personalization
 """
 
 import pytest
-from datetime import datetime
 from src.lui_simulator.templates import (
     TemplateManager,
     TemplatePurpose,
@@ -494,7 +493,7 @@ class TestTemplateManagerCustomization:
     def test_override_default_template(self, manager):
         """Should allow overriding default templates."""
         original = manager.get_template("task_creation")
-        original_desc = original.description if original else ""
+        assert original is not None
 
         override = AdaptiveTemplate(
             template_id="task_creation",
