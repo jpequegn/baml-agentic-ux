@@ -12,6 +12,7 @@ class InterfaceSchema {
   flows ConversationalFlow[] @description("Conversational interaction patterns")
   entities EntityDefinition[] @description("Domain entities and their structure")
   global_context GlobalContext? @description("Shared context across the interface")
+  accessibility InterfaceAccessibility? @description("Accessibility configuration and metadata")
 }
 
 /// Information about the domain this interface serves
