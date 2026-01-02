@@ -19,6 +19,13 @@ from .checker import (
     ViolationSeverity,
 )
 
+from .jargon import (
+    JargonCategory,
+    JargonDetector,
+    JargonTerm,
+    SimplificationResult,
+)
+
 __all__ = [
     # Readability
     "ReadabilityAnalyzer",
@@ -31,4 +38,9 @@ __all__ = [
     "ComplianceLevel",
     "LUIAccessibilityChecker",
     "ViolationSeverity",
+    # Jargon Detection
+    "JargonCategory",
+    "JargonDetector",
+    "JargonTerm",
+    "SimplificationResult",
 ]
