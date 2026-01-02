@@ -49,6 +49,22 @@ from .disability_evaluators import (
     VisualAccessibilityEvaluator,
 )
 
+from .timing import (
+    AutoUpdateConfig,
+    ErrorHandlingConfig,
+    FeedbackConfig,
+    INPUT_REQUIREMENTS,
+    InputMethodConfig,
+    InputValidationResult,
+    InteractionTimingValidator,
+    InteractionValidationResult,
+    TIMING_THRESHOLDS,
+    TimeoutConfig,
+    TimingThreshold,
+    TimingValidationResult,
+    TimingViolation,
+)
+
 __all__ = [
     # Readability
     "ReadabilityAnalyzer",
@@ -85,4 +101,18 @@ __all__ = [
     "NeurologicalAccessibilityEvaluator",
     "SpeechAccessibilityEvaluator",
     "VisualAccessibilityEvaluator",
+    # Interaction Timing
+    "AutoUpdateConfig",
+    "ErrorHandlingConfig",
+    "FeedbackConfig",
+    "INPUT_REQUIREMENTS",
+    "InputMethodConfig",
+    "InputValidationResult",
+    "InteractionTimingValidator",
+    "InteractionValidationResult",
+    "TIMING_THRESHOLDS",
+    "TimeoutConfig",
+    "TimingThreshold",
+    "TimingValidationResult",
+    "TimingViolation",
 ]
