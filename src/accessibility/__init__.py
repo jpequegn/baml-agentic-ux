@@ -26,6 +26,13 @@ from .schema_checker import (
     SchemaViolation,
 )
 
+from .jargon import (
+    JargonCategory,
+    JargonDetector,
+    JargonTerm,
+    SimplificationResult,
+)
+
 __all__ = [
     # Readability
     "ReadabilityAnalyzer",
@@ -43,4 +50,9 @@ __all__ = [
     "SchemaAccessibilityChecker",
     "SchemaAccessibilityResult",
     "SchemaViolation",
+    # Jargon Detection
+    "JargonCategory",
+    "JargonDetector",
+    "JargonTerm",
+    "SimplificationResult",
 ]

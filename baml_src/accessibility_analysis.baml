@@ -345,6 +345,135 @@ function EvaluateLUIAccessibility(
 }
 
 // ============================================
+// Jargon Detection Types (Issue #71 - Task 4.5)
+// ============================================
+
+/// Categories for classifying jargon terms
+enum JargonCategory {
+  TECHNICAL @description("Technical/programming terms like 'authenticate', 'endpoint'")
+  BUSINESS @description("Business jargon like 'leverage', 'synergy'")
+  LEGAL @description("Legal terminology like 'pursuant', 'whereas'")
+  ACADEMIC @description("Academic language like 'paradigm', 'methodology'")
+  MEDICAL @description("Medical terms requiring simplification")
+  ABBREVIATION @description("Acronyms and abbreviations like 'API', 'SDK'")
+  GENERAL @description("General complex words that have simpler alternatives")
+}
+
+/// A detected jargon term with its context and alternatives
+class JargonTermResult {
+  term string @description("The jargon term found")
+  context string @description("Surrounding text for context")
+  definition string? @description("Plain language definition")
+  simple_alternative string? @description("Suggested simple replacement")
+  category JargonCategory @description("Category of jargon")
+  position int @description("Character position in text")
+  confidence float @description("Confidence in detection (0.0-1.0)")
+}
+
+/// Result of jargon detection analysis
+class JargonDetectionResult {
+  text string @description("Original text analyzed")
+  terms_found JargonTermResult[] @description("List of jargon terms detected")
+  jargon_density float @description("Percentage of text that is jargon")
+  readability_impact string @description("Impact assessment on readability")
+  recommendation string @description("Overall recommendation")
+}
+
+/// Result of text simplification
+class SimplificationResult {
+  original_text string @description("The original text")
+  simplified_text string @description("Text with jargon replaced")
+  changes_made string[] @description("List of replacements made")
+  terms_replaced int @description("Count of terms replaced")
+  confidence float @description("Confidence in simplification quality")
+  preserved_meaning bool @description("Whether core meaning was preserved")
+}
+
+/// Detect jargon in text and suggest alternatives
+function DetectJargon(
+  text string,
+  include_definitions bool
+) -> JargonDetectionResult {
+  client CustomSonnet4
+  prompt #"
+    Analyze this text for jargon, technical terms, and complex vocabulary that could be simplified.
+
+    Text to analyze:
+    {{ text }}
+
+    For each jargon term found:
+    1. Identify the term and its category (TECHNICAL, BUSINESS, LEGAL, ACADEMIC, MEDICAL, ABBREVIATION, GENERAL)
+    2. Extract surrounding context (5-10 words before/after)
+    3. {% if include_definitions %}Provide a plain language definition{% endif %}
+    4. Suggest a simpler alternative that preserves meaning
+    5. Note the character position where it appears
+    6. Rate confidence in the detection (0.0-1.0)
+
+    Consider these as jargon:
+    - Technical terms: authenticate, endpoint, parameter, implement, execute, initialize
+    - Business jargon: leverage, synergy, utilize, facilitate, optimize, streamline
+    - Academic words: methodology, paradigm, framework, holistic, synthesize
+    - Legal terms: pursuant, whereas, heretofore, notwithstanding
+    - Abbreviations: API, SDK, UI, UX, URL (when unexplained)
+    - Complex words with simpler alternatives: necessitate→need, commence→start, terminate→end
+
+    Calculate jargon density as: (jargon word count / total word count) × 100
+
+    Assess readability impact:
+    - LOW: < 5% jargon density
+    - MEDIUM: 5-15% jargon density
+    - HIGH: > 15% jargon density
+
+    {{ ctx.output_format }}
+  "#
+}
+
+/// Simplify text by replacing jargon with plain language
+function SimplifyResponse(
+  text string,
+  preserve_technical_accuracy bool,
+  target_reading_level int
+) -> SimplificationResult {
+  client CustomSonnet4
+  prompt #"
+    Simplify this text by replacing jargon and complex vocabulary with plain language alternatives.
+
+    Original text:
+    {{ text }}
+
+    Requirements:
+    - Target reading level: Grade {{ target_reading_level }}
+    {% if preserve_technical_accuracy %}
+    - IMPORTANT: Preserve technical accuracy - simplify words but keep meaning precise
+    {% endif %}
+
+    Simplification rules:
+    1. Replace jargon with common equivalents:
+       - "authenticate" → "log in" or "prove who you are"
+       - "endpoint" → "connection point" or "address"
+       - "parameter" → "setting" or "option"
+       - "leverage" → "use"
+       - "utilize" → "use"
+       - "implement" → "set up" or "add"
+       - "execute" → "run"
+       - "necessitate" → "need" or "require"
+       - "facilitate" → "help" or "make easier"
+       - "optimize" → "improve"
+
+    2. Expand abbreviations on first use (if not already defined)
+    3. Break complex sentences into shorter ones
+    4. Use active voice instead of passive
+    5. Prefer common words over technical alternatives
+
+    Track all changes made and count replacements.
+    Assess whether core meaning was preserved (true/false).
+    Rate confidence in the overall simplification quality.
+
+    {{ ctx.output_format }}
+  "#
+}
+
+// ============================================
 // Test Cases
 // ============================================
 
@@ -383,5 +512,39 @@ test suggest_improvements {
   args {
     response "The authentication protocol necessitates verification of credentials prior to authorization."
     target_level LEVEL_AA
+  }
+}
+
+test detect_jargon_technical {
+  functions [DetectJargon]
+  args {
+    text "Please authenticate before accessing the endpoint."
+    include_definitions true
+  }
+}
+
+test detect_jargon_business {
+  functions [DetectJargon]
+  args {
+    text "We need to leverage our synergies to optimize stakeholder engagement."
+    include_definitions true
+  }
+}
+
+test simplify_technical_text {
+  functions [SimplifyResponse]
+  args {
+    text "Please authenticate before accessing the endpoint to execute the API request."
+    preserve_technical_accuracy true
+    target_reading_level 6
+  }
+}
+
+test simplify_business_jargon {
+  functions [SimplifyResponse]
+  args {
+    text "We need to leverage our core competencies and synergize with stakeholders."
+    preserve_technical_accuracy false
+    target_reading_level 8
   }
 }
