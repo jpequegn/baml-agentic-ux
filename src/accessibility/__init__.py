@@ -80,6 +80,15 @@ from .seizure_safety import (
     check_flash_safety,
 )
 
+from .report import (
+    AccessibilityReport,
+    AccessibilityReportGenerator,
+    ComponentReport,
+    DisabilityReport,
+    Recommendation,
+    ReportSummary,
+)
+
 __all__ = [
     # Readability
     "ReadabilityAnalyzer",
@@ -143,4 +152,11 @@ __all__ = [
     "SeizureViolation",
     "check_animation_safety",
     "check_flash_safety",
+    # Report Generator
+    "AccessibilityReport",
+    "AccessibilityReportGenerator",
+    "ComponentReport",
+    "DisabilityReport",
+    "Recommendation",
+    "ReportSummary",
 ]
