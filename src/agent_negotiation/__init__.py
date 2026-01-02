@@ -437,6 +437,55 @@ from .composition_executor import (
     CompositionExecutor,
 )
 
+from .security import (
+    # Credential type enums
+    CredentialType,
+    TrustLevel,
+    DelegationType,
+    CredentialStatus,
+    PermissionType,
+    SecurityEventType,
+    SecuritySeverity,
+    # Identity types
+    AgentSecurityIdentity,
+    # Credential types
+    CredentialMetadata,
+    Credential,
+    CredentialValidation,
+    # Trust chain types
+    TrustConstraint,
+    TrustChainEntry,
+    TrustChainBreak,
+    TrustChainValidation,
+    # Security context types
+    SecurityContext,
+    PermissionCondition,
+    Permission,
+    # Validation types
+    SecurityWarning,
+    SecurityValidation,
+    # Audit types
+    AuditDetails,
+    SecurityAuditEntry,
+    # Session types
+    SessionMetadata,
+    SecuritySession,
+    # Rate limiting types
+    RateLimitConfig,
+    RateLimitStatus,
+    # Input validation types
+    InputValidationConfig,
+    InputValidationResult,
+    # Callback type
+    AuditCallback,
+    # Validator class
+    SecurityValidator,
+    # Helper functions
+    create_credential,
+    create_trust_chain_entry,
+    create_security_context,
+)
+
 __all__ = [
     # Protocol types
     "ProtocolType",
@@ -837,4 +886,50 @@ __all__ = [
     "CircuitBreaker",
     # Executor class
     "CompositionExecutor",
+    # Security credential type enums
+    "CredentialType",
+    "TrustLevel",
+    "DelegationType",
+    "CredentialStatus",
+    "PermissionType",
+    "SecurityEventType",
+    "SecuritySeverity",
+    # Security identity types
+    "AgentSecurityIdentity",
+    # Credential types
+    "CredentialMetadata",
+    "Credential",
+    "CredentialValidation",
+    # Trust chain types
+    "TrustConstraint",
+    "TrustChainEntry",
+    "TrustChainBreak",
+    "TrustChainValidation",
+    # Security context types
+    "SecurityContext",
+    "PermissionCondition",
+    "Permission",
+    # Security validation types
+    "SecurityWarning",
+    "SecurityValidation",
+    # Security audit types
+    "AuditDetails",
+    "SecurityAuditEntry",
+    # Security session types
+    "SessionMetadata",
+    "SecuritySession",
+    # Rate limiting types
+    "RateLimitConfig",
+    "RateLimitStatus",
+    # Input validation types
+    "InputValidationConfig",
+    "InputValidationResult",
+    # Audit callback type
+    "AuditCallback",
+    # Security validator class
+    "SecurityValidator",
+    # Security helper functions
+    "create_credential",
+    "create_trust_chain_entry",
+    "create_security_context",
 ]
