@@ -1,18 +1,113 @@
 """
-Security Layer for Agent Negotiation
+Security & Trust Layer for Agent Negotiation.
 
-Trust chain validation, credential management, and security context validation
-for secure agent-to-agent communication.
+Provides security context, trust chain validation, authentication,
+and audit logging for agent-to-agent communication.
 
-Issue #57 - Phase 3: Agent-to-Agent Interface Negotiation (Security Implementation)
+Issue #65 - Phase 3: Agent-to-Agent Interface Negotiation (Task 3.13)
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
 from enum import Enum
-from typing import Any
+from typing import Callable, Optional, Any
+from datetime import datetime, timedelta
+import threading
 import hashlib
+import hmac
+import secrets
+import re
 import uuid
+import json
+
+
+# ============================================
+# Credential Type Enums
+# ============================================
+
+
+class CredentialType(Enum):
+    """Types of credentials for agent authentication."""
+    API_KEY = "api_key"
+    BEARER_TOKEN = "bearer_token"
+    MTLS_CERT = "mtls_cert"
+    DID = "did"
+    VC = "vc"
+    HMAC = "hmac"
+    SPIFFE = "spiffe"
+
+
+class TrustLevel(Enum):
+    """Level of trust established."""
+    NONE = "none"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    ABSOLUTE = "absolute"
+
+
+class DelegationType(Enum):
+    """Type of delegation in trust chain."""
+    DIRECT = "direct"
+    DELEGATED = "delegated"
+    TRANSITIVE = "transitive"
+    INHERITED = "inherited"
+
+
+class CredentialStatus(Enum):
+    """Status of credential validation."""
+    VALID = "valid"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+    INVALID = "invalid"
+    UNKNOWN = "unknown"
+
+
+class PermissionType(Enum):
+    """Type of permission grant."""
+    READ = "read"
+    WRITE = "write"
+    EXECUTE = "execute"
+    DELETE = "delete"
+    ADMIN = "admin"
+    DELEGATE = "delegate"
+
+
+class SecurityEventType(Enum):
+    """Security event type for auditing."""
+    AUTHENTICATION = "authentication"
+    AUTHORIZATION = "authorization"
+    CREDENTIAL_CHECK = "credential_check"
+    TRUST_CHAIN_VALIDATION = "trust_chain_validation"
+    PERMISSION_GRANT = "permission_grant"
+    PERMISSION_DENIED = "permission_denied"
+    SESSION_START = "session_start"
+    SESSION_END = "session_end"
+    ANOMALY_DETECTED = "anomaly_detected"
+
+
+class SecuritySeverity(Enum):
+    """Severity of security warnings."""
+    INFO = "info"
+    WARNING = "warning"
+    CRITICAL = "critical"
+    ALERT = "alert"
+
+
+# ============================================
+# Identity Types
+# ============================================
+
+
+@dataclass
+class AgentSecurityIdentity:
+    """Agent identity for security context."""
+    agent_id: str
+    agent_name: str
+    organization: Optional[str] = None
+    spiffe_id: Optional[str] = None
+    did: Optional[str] = None
+    public_key: Optional[str] = None
+    trust_domain: Optional[str] = None
 
 
 # ============================================
@@ -20,881 +115,1223 @@ import uuid
 # ============================================
 
 
-class CredentialType(Enum):
-    """Types of credentials for agent authentication."""
-
-    API_KEY = "api_key"
-    BEARER_TOKEN = "bearer_token"
-    MTLS_CERT = "mtls_cert"
-    DID = "did"  # Decentralized Identifier
-    VC = "vc"  # Verifiable Credential
-    JWT = "jwt"  # JSON Web Token
-    OAUTH2 = "oauth2"
-    SAML = "saml"
-
-
-class DelegationType(Enum):
-    """Types of trust delegation between agents."""
-
-    DIRECT = "direct"  # Direct trust relationship
-    DELEGATED = "delegated"  # Trust delegated from another agent
-    TRANSITIVE = "transitive"  # Trust inherited through chain
-    ATTESTED = "attested"  # Attested by third party
-    FEDERATED = "federated"  # Federated trust across domains
-
-
-# ============================================
-# Credential
-# ============================================
+@dataclass
+class CredentialMetadata:
+    """Metadata for credentials."""
+    algorithm: Optional[str] = None
+    key_id: Optional[str] = None
+    chain: Optional[list[str]] = None
+    audience: Optional[list[str]] = None
+    nonce: Optional[str] = None
 
 
 @dataclass
 class Credential:
-    """
-    A credential used for agent authentication.
-
-    Contains encrypted/hashed credential value with scope and expiration.
-    """
-
+    """A credential for authentication."""
     credential_id: str
     credential_type: CredentialType
-    value: str
-    scope: list[str] = field(default_factory=list)
-    issued_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
-    expires_at: str | None = None
-    issuer: str | None = None
-    metadata: dict[str, str] = field(default_factory=dict)
+    value: str  # Encrypted/hashed
+    issuer: str
+    subject: str
+    scope: list[str]
+    issued_at: str
+    expires_at: Optional[str] = None
+    not_before: Optional[str] = None
+    revocation_endpoint: Optional[str] = None
+    metadata: Optional[CredentialMetadata] = None
 
-    @classmethod
-    def create(
-        cls,
-        credential_type: CredentialType,
-        value: str,
-        scope: list[str] | None = None,
-        expires_at: str | None = None,
-        issuer: str | None = None,
-        metadata: dict[str, str] | None = None,
-    ) -> "Credential":
-        """Create a new credential with auto-generated ID."""
-        return cls(
-            credential_id=str(uuid.uuid4()),
-            credential_type=credential_type,
-            value=value,
-            scope=scope or [],
-            expires_at=expires_at,
-            issuer=issuer,
-            metadata=metadata or {},
-        )
 
-    @classmethod
-    def api_key(
-        cls,
-        key: str,
-        scope: list[str] | None = None,
-        expires_in_days: int | None = None,
-    ) -> "Credential":
-        """Create an API key credential."""
-        expires_at = None
-        if expires_in_days:
-            expires_dt = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
-            expires_at = expires_dt.isoformat()
-
-        # Hash the API key for storage
-        hashed_key = hashlib.sha256(key.encode()).hexdigest()
-
-        return cls.create(
-            credential_type=CredentialType.API_KEY,
-            value=hashed_key,
-            scope=scope,
-            expires_at=expires_at,
-        )
-
-    @classmethod
-    def bearer_token(
-        cls,
-        token: str,
-        scope: list[str] | None = None,
-        expires_at: str | None = None,
-    ) -> "Credential":
-        """Create a bearer token credential."""
-        return cls.create(
-            credential_type=CredentialType.BEARER_TOKEN,
-            value=token,
-            scope=scope,
-            expires_at=expires_at,
-        )
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for JSON serialization."""
-        result: dict[str, Any] = {
-            "credential_id": self.credential_id,
-            "credential_type": self.credential_type.value,
-            "value": self.value,
-            "scope": self.scope,
-            "issued_at": self.issued_at,
-            "expires_at": self.expires_at,
-            "issuer": self.issuer,
-            "metadata": self.metadata,
-        }
-        return result
+@dataclass
+class CredentialValidation:
+    """Result of credential validation."""
+    credential_id: str
+    status: CredentialStatus
+    trust_level: TrustLevel
+    valid_scopes: list[str]
+    invalid_scopes: list[str]
+    expires_at: Optional[str]
+    warnings: list[str]
+    error: Optional[str] = None
 
 
 # ============================================
-# Trust Chain
+# Trust Chain Types
 # ============================================
 
 
 @dataclass
+class TrustConstraint:
+    """Constraint on trust delegation."""
+    constraint_type: str
+    value: str
+    operator: str
+
+
+@dataclass
 class TrustChainEntry:
-    """
-    An entry in a trust chain representing delegation.
-
-    Tracks who delegated trust to whom, with permissions and expiration.
-    """
-
+    """Entry in a trust chain."""
     entry_id: str
     issuer: str
     subject: str
     delegation_type: DelegationType
-    permissions: list[str] = field(default_factory=list)
-    issued_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
-    expires_at: str | None = None
-    signature: str | None = None
-    previous_entry_id: str | None = None
-    metadata: dict[str, str] = field(default_factory=dict)
+    permissions: list[str]
+    issued_at: str
+    expires_at: str
+    constraints: Optional[list[TrustConstraint]] = None
+    signature: Optional[str] = None
+    parent_entry_id: Optional[str] = None
 
-    @classmethod
-    def create(
-        cls,
-        issuer: str,
-        subject: str,
-        delegation_type: DelegationType,
-        permissions: list[str] | None = None,
-        expires_in_hours: int | None = None,
-        signature: str | None = None,
-        previous_entry_id: str | None = None,
-        metadata: dict[str, str] | None = None,
-    ) -> "TrustChainEntry":
-        """Create a new trust chain entry."""
-        expires_at = None
-        if expires_in_hours:
-            expires_dt = datetime.now(timezone.utc) + timedelta(hours=expires_in_hours)
-            expires_at = expires_dt.isoformat()
 
-        return cls(
-            entry_id=str(uuid.uuid4()),
-            issuer=issuer,
-            subject=subject,
-            delegation_type=delegation_type,
-            permissions=permissions or [],
-            expires_at=expires_at,
-            signature=signature,
-            previous_entry_id=previous_entry_id,
-            metadata=metadata or {},
-        )
+@dataclass
+class TrustChainBreak:
+    """Information about a break in trust chain."""
+    position: int
+    issuer: str
+    subject: str
+    reason: str
+    severity: SecuritySeverity
 
-    def is_expired(self) -> bool:
-        """Check if this trust chain entry has expired."""
-        if not self.expires_at:
-            return False
 
-        expires_dt = datetime.fromisoformat(self.expires_at.replace('Z', '+00:00'))
-        return datetime.now(timezone.utc) > expires_dt
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for JSON serialization."""
-        return {
-            "entry_id": self.entry_id,
-            "issuer": self.issuer,
-            "subject": self.subject,
-            "delegation_type": self.delegation_type.value,
-            "permissions": self.permissions,
-            "issued_at": self.issued_at,
-            "expires_at": self.expires_at,
-            "signature": self.signature,
-            "previous_entry_id": self.previous_entry_id,
-            "metadata": self.metadata,
-        }
+@dataclass
+class TrustChainValidation:
+    """Result of trust chain validation."""
+    valid: bool
+    chain_length: int
+    root_issuer: str
+    final_subject: str
+    effective_trust_level: TrustLevel
+    effective_permissions: list[str]
+    broken_links: Optional[list[TrustChainBreak]]
+    warnings: list[str]
 
 
 # ============================================
-# Security Context
+# Security Context Types
 # ============================================
 
 
 @dataclass
 class SecurityContext:
-    """
-    Complete security context for an agent request.
-
-    Contains credentials, trust chain, and session information.
-    """
-
+    """Complete security context for a request."""
     context_id: str
-    requester_agent_id: str
-    credentials: list[Credential] = field(default_factory=list)
-    trust_chain: list[TrustChainEntry] = field(default_factory=list)
-    session_token: str | None = None
-    created_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
-    expires_at: str | None = None
-    ip_address: str | None = None
-    user_agent: str | None = None
-    metadata: dict[str, str] = field(default_factory=dict)
+    requester: AgentSecurityIdentity
+    credentials: list[Credential]
+    trust_chain: list[TrustChainEntry]
+    request_timestamp: str
+    session_token: Optional[str] = None
+    session_expires_at: Optional[str] = None
+    request_nonce: Optional[str] = None
+    source_ip: Optional[str] = None
+    user_agent: Optional[str] = None
 
-    @classmethod
-    def create(
-        cls,
-        requester_agent_id: str,
-        credentials: list[Credential] | None = None,
-        trust_chain: list[TrustChainEntry] | None = None,
-        session_token: str | None = None,
-        expires_in_hours: int = 24,
-        ip_address: str | None = None,
-        user_agent: str | None = None,
-        metadata: dict[str, str] | None = None,
-    ) -> "SecurityContext":
-        """Create a new security context."""
-        expires_dt = datetime.now(timezone.utc) + timedelta(hours=expires_in_hours)
 
-        return cls(
-            context_id=str(uuid.uuid4()),
-            requester_agent_id=requester_agent_id,
-            credentials=credentials or [],
-            trust_chain=trust_chain or [],
-            session_token=session_token,
-            expires_at=expires_dt.isoformat(),
-            ip_address=ip_address,
-            user_agent=user_agent,
-            metadata=metadata or {},
-        )
+@dataclass
+class PermissionCondition:
+    """Condition on a permission."""
+    field: str
+    operator: str
+    value: str
 
-    def add_credential(self, credential: Credential) -> None:
-        """Add a credential to this security context."""
-        self.credentials.append(credential)
 
-    def add_trust_entry(self, entry: TrustChainEntry) -> None:
-        """Add a trust chain entry to this security context."""
-        self.trust_chain.append(entry)
-
-    def is_expired(self) -> bool:
-        """Check if this security context has expired."""
-        if not self.expires_at:
-            return False
-
-        expires_dt = datetime.fromisoformat(self.expires_at.replace('Z', '+00:00'))
-        return datetime.now(timezone.utc) > expires_dt
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for JSON serialization."""
-        return {
-            "context_id": self.context_id,
-            "requester_agent_id": self.requester_agent_id,
-            "credentials": [c.to_dict() for c in self.credentials],
-            "trust_chain": [t.to_dict() for t in self.trust_chain],
-            "session_token": self.session_token,
-            "created_at": self.created_at,
-            "expires_at": self.expires_at,
-            "ip_address": self.ip_address,
-            "user_agent": self.user_agent,
-            "metadata": self.metadata,
-        }
+@dataclass
+class Permission:
+    """Permission being requested or granted."""
+    permission_id: str
+    resource: str
+    action: PermissionType
+    conditions: Optional[list[PermissionCondition]] = None
 
 
 # ============================================
-# Security Validation Result
+# Security Validation Types
 # ============================================
 
 
 @dataclass
+class SecurityWarning:
+    """Security warning."""
+    warning_id: str
+    severity: SecuritySeverity
+    category: str
+    message: str
+    recommendation: Optional[str] = None
+
+
+@dataclass
 class SecurityValidation:
-    """
-    Result of security context validation.
-
-    Contains validation status, trust level, permissions, and warnings.
-    """
-
+    """Result of security context validation."""
     validation_id: str
     valid: bool
-    trust_level: str  # TrustLevel from agent_types
-    granted_permissions: list[str] = field(default_factory=list)
-    denied_permissions: list[str] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
-    validation_time_ms: int = 0
-    expires_at: str | None = None
-    failure_reasons: list[str] = field(default_factory=list)
-    metadata: dict[str, str] = field(default_factory=dict)
-
-    @classmethod
-    def create_valid(
-        cls,
-        trust_level: str,
-        granted_permissions: list[str] | None = None,
-        warnings: list[str] | None = None,
-        expires_at: str | None = None,
-        validation_time_ms: int = 0,
-    ) -> "SecurityValidation":
-        """Create a valid security validation result."""
-        return cls(
-            validation_id=str(uuid.uuid4()),
-            valid=True,
-            trust_level=trust_level,
-            granted_permissions=granted_permissions or [],
-            warnings=warnings or [],
-            expires_at=expires_at,
-            validation_time_ms=validation_time_ms,
-        )
-
-    @classmethod
-    def create_invalid(
-        cls,
-        failure_reasons: list[str],
-        denied_permissions: list[str] | None = None,
-        validation_time_ms: int = 0,
-    ) -> "SecurityValidation":
-        """Create an invalid security validation result."""
-        return cls(
-            validation_id=str(uuid.uuid4()),
-            valid=False,
-            trust_level="none",
-            denied_permissions=denied_permissions or [],
-            failure_reasons=failure_reasons,
-            validation_time_ms=validation_time_ms,
-        )
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for JSON serialization."""
-        return {
-            "validation_id": self.validation_id,
-            "valid": self.valid,
-            "trust_level": self.trust_level,
-            "granted_permissions": self.granted_permissions,
-            "denied_permissions": self.denied_permissions,
-            "warnings": self.warnings,
-            "validation_time_ms": self.validation_time_ms,
-            "expires_at": self.expires_at,
-            "failure_reasons": self.failure_reasons,
-            "metadata": self.metadata,
-        }
+    trust_level: TrustLevel
+    granted_permissions: list[str]
+    denied_permissions: list[str]
+    required_permissions: list[str]
+    credential_validations: list[CredentialValidation]
+    trust_chain_validation: Optional[TrustChainValidation]
+    warnings: list[SecurityWarning]
+    errors: list[str]
+    expires_at: str
+    audit_id: str
 
 
 # ============================================
-# Trust Chain Validator
+# Audit Types
 # ============================================
 
 
-class TrustChainValidator:
-    """
-    Validates trust chains for agent-to-agent communication.
+@dataclass
+class AuditDetails:
+    """Additional audit details."""
+    context_id: Optional[str] = None
+    credentials_used: Optional[list[str]] = None
+    permissions_checked: Optional[list[str]] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    error_message: Optional[str] = None
+    metadata: Optional[str] = None
 
-    Ensures chains are unbroken, unexpired, and permissions are properly delegated.
-    """
 
-    def __init__(self, max_chain_length: int = 10):
-        """
-        Initialize the trust chain validator.
-
-        Args:
-            max_chain_length: Maximum allowed chain length to prevent abuse
-        """
-        self.max_chain_length = max_chain_length
-
-    def validate_chain(
-        self,
-        trust_chain: list[TrustChainEntry],
-        required_issuer: str | None = None,
-        required_subject: str | None = None,
-    ) -> tuple[bool, list[str]]:
-        """
-        Validate a complete trust chain.
-
-        Args:
-            trust_chain: List of trust chain entries to validate
-            required_issuer: Optional root issuer requirement
-            required_subject: Optional final subject requirement
-
-        Returns:
-            Tuple of (is_valid, list of error messages)
-        """
-        errors: list[str] = []
-
-        if not trust_chain:
-            errors.append("Trust chain is empty")
-            return False, errors
-
-        # Check chain length
-        if len(trust_chain) > self.max_chain_length:
-            errors.append(
-                f"Trust chain too long: {len(trust_chain)} > {self.max_chain_length}"
-            )
-            return False, errors
-
-        # Check each entry for expiration
-        for i, entry in enumerate(trust_chain):
-            if entry.is_expired():
-                errors.append(
-                    f"Trust chain entry {i} (id: {entry.entry_id}) has expired"
-                )
-
-        # Validate chain continuity
-        for i in range(1, len(trust_chain)):
-            prev_entry = trust_chain[i - 1]
-            curr_entry = trust_chain[i]
-
-            # Subject of previous should be issuer of current
-            if prev_entry.subject != curr_entry.issuer:
-                errors.append(
-                    f"Chain break at entry {i}: "
-                    f"previous subject '{prev_entry.subject}' != "
-                    f"current issuer '{curr_entry.issuer}'"
-                )
-
-            # Check previous_entry_id reference
-            if curr_entry.previous_entry_id and curr_entry.previous_entry_id != prev_entry.entry_id:
-                errors.append(
-                    f"Entry {i} previous_entry_id mismatch: "
-                    f"expected {prev_entry.entry_id}, got {curr_entry.previous_entry_id}"
-                )
-
-        # Validate root issuer if required
-        if required_issuer and trust_chain[0].issuer != required_issuer:
-            errors.append(
-                f"Root issuer mismatch: "
-                f"expected '{required_issuer}', got '{trust_chain[0].issuer}'"
-            )
-
-        # Validate final subject if required
-        if required_subject and trust_chain[-1].subject != required_subject:
-            errors.append(
-                f"Final subject mismatch: "
-                f"expected '{required_subject}', got '{trust_chain[-1].subject}'"
-            )
-
-        return len(errors) == 0, errors
-
-    def check_delegation(
-        self,
-        trust_chain: list[TrustChainEntry],
-        required_permissions: list[str],
-    ) -> tuple[bool, list[str], list[str]]:
-        """
-        Check if permissions are properly delegated through the chain.
-
-        Args:
-            trust_chain: Trust chain to check
-            required_permissions: Permissions needed
-
-        Returns:
-            Tuple of (has_permissions, granted_permissions, missing_permissions)
-        """
-        if not trust_chain:
-            return False, [], required_permissions
-
-        # Start with permissions from the first entry
-        available_permissions = set(trust_chain[0].permissions)
-
-        # Each subsequent entry can only delegate permissions it has
-        for i in range(1, len(trust_chain)):
-            entry = trust_chain[i]
-            entry_perms = set(entry.permissions)
-
-            # Can only delegate permissions available in chain so far
-            if not entry_perms.issubset(available_permissions):
-                # Some permissions in this entry weren't delegated to it
-                unauthorized = entry_perms - available_permissions
-                # Continue but note the limitation
-                available_permissions = available_permissions.intersection(entry_perms)
-            else:
-                # Narrow down to what this entry actually delegates
-                available_permissions = entry_perms
-
-        # Check if we have all required permissions
-        required_set = set(required_permissions)
-        granted = list(available_permissions.intersection(required_set))
-        missing = list(required_set - available_permissions)
-
-        has_all = len(missing) == 0
-
-        return has_all, granted, missing
-
-    def compute_trust_level(
-        self,
-        trust_chain: list[TrustChainEntry],
-    ) -> str:
-        """
-        Compute effective trust level based on the chain.
-
-        The trust level is determined by the weakest link in the chain.
-
-        Args:
-            trust_chain: Trust chain to analyze
-
-        Returns:
-            Trust level string (maps to TrustLevel enum values)
-        """
-        if not trust_chain:
-            return "none"
-
-        # Map delegation types to trust levels
-        delegation_to_trust = {
-            DelegationType.DIRECT: "trusted",
-            DelegationType.DELEGATED: "verified",
-            DelegationType.TRANSITIVE: "verified",
-            DelegationType.ATTESTED: "verified",
-            DelegationType.FEDERATED: "basic",
-        }
-
-        trust_levels_order = ["none", "basic", "verified", "trusted", "privileged"]
-
-        # Find minimum trust level in chain
-        min_trust_level = "privileged"
-        min_index = len(trust_levels_order) - 1
-
-        for entry in trust_chain:
-            entry_trust = delegation_to_trust.get(entry.delegation_type, "none")
-            entry_index = trust_levels_order.index(entry_trust)
-
-            if entry_index < min_index:
-                min_index = entry_index
-                min_trust_level = entry_trust
-
-        return min_trust_level
+@dataclass
+class SecurityAuditEntry:
+    """Security audit log entry."""
+    audit_id: str
+    timestamp: str
+    event_type: SecurityEventType
+    actor: str
+    action: str
+    result: str
+    target: Optional[str] = None
+    trust_level: Optional[TrustLevel] = None
+    details: Optional[AuditDetails] = None
 
 
 # ============================================
-# Credential Manager
+# Session Types
 # ============================================
 
 
-class CredentialManager:
-    """
-    Manages credential validation and lifecycle.
+@dataclass
+class SessionMetadata:
+    """Session metadata."""
+    created_from: Optional[str] = None
+    credential_ids: list[str] = field(default_factory=list)
+    trust_chain_depth: int = 0
+    original_ip: Optional[str] = None
+    renewal_count: int = 0
 
-    Validates credentials, checks expiration, and manages credential storage.
-    """
 
-    def __init__(self):
-        """Initialize the credential manager."""
-        self._credential_store: dict[str, Credential] = {}
-
-    def validate_credential(
-        self,
-        credential: Credential,
-        expected_type: CredentialType | None = None,
-        required_scope: list[str] | None = None,
-    ) -> tuple[bool, list[str]]:
-        """
-        Validate a credential.
-
-        Args:
-            credential: Credential to validate
-            expected_type: Expected credential type
-            required_scope: Required scope (all must be present)
-
-        Returns:
-            Tuple of (is_valid, list of error messages)
-        """
-        errors: list[str] = []
-
-        # Check type if specified
-        if expected_type and credential.credential_type != expected_type:
-            errors.append(
-                f"Credential type mismatch: "
-                f"expected {expected_type.value}, got {credential.credential_type.value}"
-            )
-
-        # Check expiration
-        if self.check_expiration(credential):
-            errors.append(f"Credential {credential.credential_id} has expired")
-
-        # Check scope if specified
-        if required_scope:
-            credential_scopes = set(credential.scope)
-            required_scopes = set(required_scope)
-
-            if not required_scopes.issubset(credential_scopes):
-                missing = required_scopes - credential_scopes
-                errors.append(
-                    f"Credential missing required scopes: {', '.join(missing)}"
-                )
-
-        # Basic format validation based on type
-        type_errors = self._validate_credential_format(credential)
-        errors.extend(type_errors)
-
-        return len(errors) == 0, errors
-
-    def check_expiration(self, credential: Credential) -> bool:
-        """
-        Check if a credential has expired.
-
-        Args:
-            credential: Credential to check
-
-        Returns:
-            True if expired, False otherwise
-        """
-        if not credential.expires_at:
-            return False
-
-        try:
-            expires_dt = datetime.fromisoformat(
-                credential.expires_at.replace('Z', '+00:00')
-            )
-            return datetime.now(timezone.utc) > expires_dt
-        except (ValueError, AttributeError):
-            # Invalid date format treated as expired
-            return True
-
-    def store_credential(self, credential: Credential) -> None:
-        """
-        Store a credential for later retrieval.
-
-        Args:
-            credential: Credential to store
-        """
-        self._credential_store[credential.credential_id] = credential
-
-    def retrieve_credential(self, credential_id: str) -> Credential | None:
-        """
-        Retrieve a stored credential.
-
-        Args:
-            credential_id: ID of credential to retrieve
-
-        Returns:
-            Credential if found, None otherwise
-        """
-        return self._credential_store.get(credential_id)
-
-    def revoke_credential(self, credential_id: str) -> bool:
-        """
-        Revoke a credential.
-
-        Args:
-            credential_id: ID of credential to revoke
-
-        Returns:
-            True if revoked, False if not found
-        """
-        if credential_id in self._credential_store:
-            del self._credential_store[credential_id]
-            return True
-        return False
-
-    def _validate_credential_format(self, credential: Credential) -> list[str]:
-        """
-        Validate credential format based on type.
-
-        Args:
-            credential: Credential to validate
-
-        Returns:
-            List of format validation errors
-        """
-        errors: list[str] = []
-
-        if credential.credential_type == CredentialType.API_KEY:
-            # API keys should be hashed (64 hex chars for SHA-256)
-            if len(credential.value) != 64 or not all(
-                c in "0123456789abcdef" for c in credential.value.lower()
-            ):
-                errors.append("API key should be SHA-256 hash (64 hex characters)")
-
-        elif credential.credential_type == CredentialType.JWT:
-            # JWT should have 3 parts separated by dots
-            parts = credential.value.split('.')
-            if len(parts) != 3:
-                errors.append("JWT should have 3 parts (header.payload.signature)")
-
-        # Add more type-specific validation as needed
-
-        return errors
+@dataclass
+class SecuritySession:
+    """Security session for ongoing communication."""
+    session_id: str
+    agent_id: str
+    created_at: str
+    expires_at: str
+    last_activity: str
+    trust_level: TrustLevel
+    permissions: list[str]
+    session_token: str
+    refresh_token: Optional[str] = None
+    metadata: Optional[SessionMetadata] = None
 
 
 # ============================================
-# Security Validator
+# Rate Limiting Types
+# ============================================
+
+
+@dataclass
+class RateLimitConfig:
+    """Rate limiting configuration."""
+    requests_per_minute: int = 60
+    requests_per_hour: int = 1000
+    burst_limit: int = 10
+    by_agent: bool = True
+    by_ip: bool = False
+
+
+@dataclass
+class RateLimitStatus:
+    """Rate limit status."""
+    allowed: bool
+    remaining: int
+    reset_at: str
+    retry_after_ms: Optional[int] = None
+
+
+# ============================================
+# Input Validation Types
+# ============================================
+
+
+@dataclass
+class InputValidationConfig:
+    """Configuration for input validation."""
+    max_input_length: int = 10000
+    allowed_patterns: list[str] = field(default_factory=list)
+    blocked_patterns: list[str] = field(default_factory=lambda: [
+        r"<script",  # Script injection
+        r"{{.*}}",   # Template injection
+        r"\$\{.*\}",  # Expression injection
+        r"system\s*\(",  # System call injection
+        r"exec\s*\(",   # Exec injection
+    ])
+    sanitization_level: str = "standard"
+    escape_special_chars: bool = True
+
+
+@dataclass
+class InputValidationResult:
+    """Result of input validation."""
+    valid: bool
+    sanitized_input: Optional[str]
+    blocked_patterns_found: list[str]
+    warnings: list[str]
+
+
+# ============================================
+# Callback Types
+# ============================================
+
+
+# Type for audit callback
+AuditCallback = Callable[[SecurityAuditEntry], None]
+
+
+# ============================================
+# SecurityValidator Class
 # ============================================
 
 
 class SecurityValidator:
     """
-    Validates complete security contexts for agent requests.
+    Validates security contexts, credentials, and trust chains.
 
-    Combines credential validation, trust chain validation, and permission checking.
+    Provides:
+    - Credential validation (expiry, format, issuer)
+    - Trust chain verification
+    - Permission checking
+    - SPIFFE ID format support
+    - Audit logging
     """
 
     def __init__(
         self,
-        credential_manager: CredentialManager | None = None,
-        trust_chain_validator: TrustChainValidator | None = None,
+        trusted_issuers: Optional[list[str]] = None,
+        trusted_domains: Optional[list[str]] = None,
+        audit_callback: Optional[AuditCallback] = None,
+        rate_limit_config: Optional[RateLimitConfig] = None,
+        input_validation_config: Optional[InputValidationConfig] = None,
     ):
         """
         Initialize the security validator.
 
         Args:
-            credential_manager: Optional credential manager instance
-            trust_chain_validator: Optional trust chain validator instance
+            trusted_issuers: List of trusted credential issuers
+            trusted_domains: List of trusted SPIFFE domains
+            audit_callback: Callback for audit logging
+            rate_limit_config: Rate limiting configuration
+            input_validation_config: Input validation configuration
         """
-        self.credential_manager = credential_manager or CredentialManager()
-        self.trust_chain_validator = trust_chain_validator or TrustChainValidator()
+        self.trusted_issuers = trusted_issuers or []
+        self.trusted_domains = trusted_domains or []
+        self.audit_callback = audit_callback
+        self.rate_limit_config = rate_limit_config or RateLimitConfig()
+        self.input_validation_config = input_validation_config or InputValidationConfig()
+
+        self._sessions: dict[str, SecuritySession] = {}
+        self._revoked_credentials: set[str] = set()
+        self._rate_limit_counters: dict[str, list[datetime]] = {}
+        self._audit_log: list[SecurityAuditEntry] = []
+        self._lock = threading.Lock()
 
     def validate_context(
         self,
         context: SecurityContext,
-        required_permissions: list[str] | None = None,
-        minimum_trust_level: str = "none",
+        required_permissions: list[str],
+        strict_mode: bool = False,
     ) -> SecurityValidation:
         """
-        Validate a complete security context.
+        Validate a security context against required permissions.
 
         Args:
             context: Security context to validate
-            required_permissions: Permissions needed for the operation
-            minimum_trust_level: Minimum trust level required
+            required_permissions: Permissions required for operation
+            strict_mode: Whether to enforce strict validation
 
         Returns:
-            SecurityValidation result
+            SecurityValidation with results
         """
-        import time
-        start_time = time.time()
-
+        validation_id = str(uuid.uuid4())
+        audit_id = str(uuid.uuid4())
         errors: list[str] = []
-        warnings: list[str] = []
-        granted_permissions: list[str] = []
+        warnings: list[SecurityWarning] = []
 
-        # Check context expiration
-        if context.is_expired():
-            errors.append("Security context has expired")
-            return SecurityValidation.create_invalid(
-                failure_reasons=errors,
-                validation_time_ms=int((time.time() - start_time) * 1000),
-            )
+        # Validate credentials
+        credential_validations = [
+            self._validate_credential(cred) for cred in context.credentials
+        ]
 
-        # Validate all credentials
-        for credential in context.credentials:
-            is_valid, cred_errors = self.credential_manager.validate_credential(credential)
-            if not is_valid:
-                errors.extend(cred_errors)
+        # Check for any invalid credentials
+        valid_credentials = [
+            cv for cv in credential_validations
+            if cv.status == CredentialStatus.VALID
+        ]
 
-            # Check expiration specifically
-            if self.credential_manager.check_expiration(credential):
-                warnings.append(
-                    f"Credential {credential.credential_id} has expired"
-                )
+        if not valid_credentials:
+            errors.append("No valid credentials provided")
 
         # Validate trust chain
-        if context.trust_chain:
-            chain_valid, chain_errors = self.trust_chain_validator.validate_chain(
-                context.trust_chain,
-                required_subject=context.requester_agent_id,
-            )
-            if not chain_valid:
-                errors.extend(chain_errors)
-
-            # Check permissions through delegation
-            if required_permissions:
-                has_perms, granted, missing = self.trust_chain_validator.check_delegation(
-                    context.trust_chain,
-                    required_permissions,
-                )
-                granted_permissions = granted
-                if not has_perms:
-                    errors.append(
-                        f"Missing required permissions: {', '.join(missing)}"
-                    )
-
-            # Compute trust level from chain
-            trust_level = self.trust_chain_validator.compute_trust_level(
-                context.trust_chain
-            )
-        else:
-            # No trust chain, basic trust from credentials
-            if context.credentials:
-                trust_level = "basic"
-                granted_permissions = required_permissions or []
-            else:
-                trust_level = "none"
-
-        # Check if trust level meets minimum
-        trust_levels_order = ["none", "basic", "verified", "trusted", "privileged"]
-        try:
-            context_trust_index = trust_levels_order.index(trust_level)
-            min_trust_index = trust_levels_order.index(minimum_trust_level)
-
-            if context_trust_index < min_trust_index:
-                errors.append(
-                    f"Insufficient trust level: {trust_level} < {minimum_trust_level}"
-                )
-        except ValueError:
-            errors.append(f"Invalid trust level: {trust_level}")
-
-        validation_time_ms = int((time.time() - start_time) * 1000)
-
-        # Create result
-        if errors:
-            return SecurityValidation.create_invalid(
-                failure_reasons=errors,
-                denied_permissions=required_permissions or [],
-                validation_time_ms=validation_time_ms,
-            )
-        else:
-            return SecurityValidation.create_valid(
-                trust_level=trust_level,
-                granted_permissions=granted_permissions,
-                warnings=warnings,
-                expires_at=context.expires_at,
-                validation_time_ms=validation_time_ms,
-            )
-
-    def check_permissions(
-        self,
-        context: SecurityContext,
-        required_permissions: list[str],
-    ) -> tuple[bool, list[str], list[str]]:
-        """
-        Check if a security context has required permissions.
-
-        Args:
-            context: Security context to check
-            required_permissions: Permissions needed
-
-        Returns:
-            Tuple of (has_all_permissions, granted_permissions, missing_permissions)
-        """
-        if not context.trust_chain:
-            # Without trust chain, we can't verify permissions
-            return False, [], required_permissions
-
-        return self.trust_chain_validator.check_delegation(
+        trust_chain_validation = self._validate_trust_chain(
             context.trust_chain,
-            required_permissions,
+            context.requester.agent_id,
         )
 
-    def create_session_token(
-        self,
-        agent_id: str,
-        permissions: list[str] | None = None,
-    ) -> str:
+        if not trust_chain_validation.valid:
+            if strict_mode:
+                errors.append("Trust chain validation failed")
+            else:
+                warnings.append(SecurityWarning(
+                    warning_id=str(uuid.uuid4()),
+                    severity=SecuritySeverity.WARNING,
+                    category="trust_chain",
+                    message="Trust chain validation had issues",
+                    recommendation="Review trust chain configuration",
+                ))
+
+        # Collect all granted permissions
+        granted_permissions: set[str] = set()
+        for cv in valid_credentials:
+            granted_permissions.update(cv.valid_scopes)
+
+        # Add permissions from trust chain
+        if trust_chain_validation.valid:
+            granted_permissions.update(trust_chain_validation.effective_permissions)
+
+        # Check required permissions
+        granted = list(granted_permissions)
+        denied = [p for p in required_permissions if p not in granted_permissions]
+
+        if denied:
+            errors.append(f"Missing required permissions: {', '.join(denied)}")
+
+        # Determine overall trust level
+        trust_level = self._calculate_trust_level(
+            credential_validations,
+            trust_chain_validation,
+        )
+
+        # Calculate expiration
+        expires_at = self._calculate_validation_expiry(credential_validations)
+
+        # Validate SPIFFE ID if present
+        if context.requester.spiffe_id:
+            spiffe_warnings = self._validate_spiffe_id(context.requester.spiffe_id)
+            warnings.extend(spiffe_warnings)
+
+        # Check session if present
+        if context.session_token:
+            session_warnings = self._validate_session_token(context.session_token)
+            warnings.extend(session_warnings)
+
+        # Create validation result
+        validation = SecurityValidation(
+            validation_id=validation_id,
+            valid=len(errors) == 0,
+            trust_level=trust_level,
+            granted_permissions=granted,
+            denied_permissions=denied,
+            required_permissions=required_permissions,
+            credential_validations=credential_validations,
+            trust_chain_validation=trust_chain_validation,
+            warnings=warnings,
+            errors=errors,
+            expires_at=expires_at,
+            audit_id=audit_id,
+        )
+
+        # Log audit entry
+        self._log_audit(
+            SecurityAuditEntry(
+                audit_id=audit_id,
+                timestamp=datetime.now().isoformat(),
+                event_type=SecurityEventType.AUTHORIZATION,
+                actor=context.requester.agent_id,
+                action="validate_context",
+                result="success" if validation.valid else "failure",
+                trust_level=trust_level,
+                details=AuditDetails(
+                    context_id=context.context_id,
+                    credentials_used=[c.credential_id for c in context.credentials],
+                    permissions_checked=required_permissions,
+                    ip_address=context.source_ip,
+                    error_message=errors[0] if errors else None,
+                ),
+            )
+        )
+
+        return validation
+
+    def validate_credential(self, credential: Credential) -> CredentialValidation:
         """
-        Create a session token for an agent.
+        Validate a single credential.
 
         Args:
-            agent_id: Agent identifier
-            permissions: Permissions granted in this session
+            credential: Credential to validate
 
         Returns:
-            Session token string
+            CredentialValidation with results
         """
-        # Simple session token generation (production would use JWT or similar)
-        token_data = f"{agent_id}:{datetime.now(timezone.utc).isoformat()}"
-        if permissions:
-            token_data += f":{','.join(permissions)}"
+        return self._validate_credential(credential)
 
-        token = hashlib.sha256(token_data.encode()).hexdigest()
-        return token
+    def validate_trust_chain(
+        self,
+        chain: list[TrustChainEntry],
+        target_subject: str,
+    ) -> TrustChainValidation:
+        """
+        Validate a trust chain.
+
+        Args:
+            chain: Trust chain entries
+            target_subject: Expected final subject
+
+        Returns:
+            TrustChainValidation with results
+        """
+        return self._validate_trust_chain(chain, target_subject)
+
+    def create_session(
+        self,
+        context: SecurityContext,
+        duration_ms: int = 3600000,  # 1 hour default
+        requested_permissions: Optional[list[str]] = None,
+    ) -> tuple[Optional[SecuritySession], SecurityValidation]:
+        """
+        Create a security session.
+
+        Args:
+            context: Security context for session
+            duration_ms: Session duration in milliseconds
+            requested_permissions: Permissions requested for session
+
+        Returns:
+            Tuple of (session or None, validation result)
+        """
+        requested_permissions = requested_permissions or []
+
+        # Validate context
+        validation = self.validate_context(context, requested_permissions)
+
+        if not validation.valid:
+            return None, validation
+
+        # Create session
+        now = datetime.now()
+        session_id = str(uuid.uuid4())
+        session_token = secrets.token_urlsafe(32)
+        refresh_token = secrets.token_urlsafe(32)
+
+        session = SecuritySession(
+            session_id=session_id,
+            agent_id=context.requester.agent_id,
+            created_at=now.isoformat(),
+            expires_at=(now + timedelta(milliseconds=duration_ms)).isoformat(),
+            last_activity=now.isoformat(),
+            trust_level=validation.trust_level,
+            permissions=validation.granted_permissions,
+            session_token=session_token,
+            refresh_token=refresh_token,
+            metadata=SessionMetadata(
+                created_from="security_context",
+                credential_ids=[c.credential_id for c in context.credentials],
+                trust_chain_depth=len(context.trust_chain),
+                original_ip=context.source_ip,
+            ),
+        )
+
+        # Store session
+        with self._lock:
+            self._sessions[session_token] = session
+
+        # Log audit
+        self._log_audit(
+            SecurityAuditEntry(
+                audit_id=str(uuid.uuid4()),
+                timestamp=now.isoformat(),
+                event_type=SecurityEventType.SESSION_START,
+                actor=context.requester.agent_id,
+                action="create_session",
+                result="success",
+                trust_level=validation.trust_level,
+                details=AuditDetails(
+                    context_id=context.context_id,
+                    ip_address=context.source_ip,
+                ),
+            )
+        )
+
+        return session, validation
+
+    def validate_session(self, session_token: str) -> tuple[bool, Optional[SecuritySession]]:
+        """
+        Validate a session token.
+
+        Args:
+            session_token: Session token to validate
+
+        Returns:
+            Tuple of (is_valid, session or None)
+        """
+        with self._lock:
+            session = self._sessions.get(session_token)
+
+        if not session:
+            return False, None
+
+        # Check expiration
+        expires_at = datetime.fromisoformat(session.expires_at.replace("Z", "+00:00").replace("+00:00", ""))
+        if datetime.now() > expires_at:
+            return False, None
+
+        # Update last activity
+        session.last_activity = datetime.now().isoformat()
+
+        return True, session
+
+    def end_session(self, session_token: str) -> bool:
+        """
+        End a security session.
+
+        Args:
+            session_token: Session token to end
+
+        Returns:
+            True if session was ended, False if not found
+        """
+        session = None
+        with self._lock:
+            if session_token in self._sessions:
+                session = self._sessions.pop(session_token)
+
+        if session:
+            # Log audit (outside lock to avoid deadlock)
+            self._log_audit(
+                SecurityAuditEntry(
+                    audit_id=str(uuid.uuid4()),
+                    timestamp=datetime.now().isoformat(),
+                    event_type=SecurityEventType.SESSION_END,
+                    actor=session.agent_id,
+                    action="end_session",
+                    result="success",
+                )
+            )
+            return True
+
+        return False
+
+    def revoke_credential(self, credential_id: str) -> None:
+        """
+        Revoke a credential.
+
+        Args:
+            credential_id: ID of credential to revoke
+        """
+        with self._lock:
+            self._revoked_credentials.add(credential_id)
+
+        self._log_audit(
+            SecurityAuditEntry(
+                audit_id=str(uuid.uuid4()),
+                timestamp=datetime.now().isoformat(),
+                event_type=SecurityEventType.CREDENTIAL_CHECK,
+                actor="system",
+                action="revoke_credential",
+                result="success",
+                target=credential_id,
+            )
+        )
+
+    def check_rate_limit(self, identifier: str) -> RateLimitStatus:
+        """
+        Check rate limit for an identifier.
+
+        Args:
+            identifier: Agent ID or IP address
+
+        Returns:
+            RateLimitStatus
+        """
+        now = datetime.now()
+        minute_ago = now - timedelta(minutes=1)
+        hour_ago = now - timedelta(hours=1)
+
+        with self._lock:
+            if identifier not in self._rate_limit_counters:
+                self._rate_limit_counters[identifier] = []
+
+            # Clean old entries
+            self._rate_limit_counters[identifier] = [
+                ts for ts in self._rate_limit_counters[identifier]
+                if ts > hour_ago
+            ]
+
+            timestamps = self._rate_limit_counters[identifier]
+
+            # Count requests
+            requests_last_minute = sum(1 for ts in timestamps if ts > minute_ago)
+            requests_last_hour = len(timestamps)
+
+            # Check limits
+            if requests_last_minute >= self.rate_limit_config.requests_per_minute:
+                return RateLimitStatus(
+                    allowed=False,
+                    remaining=0,
+                    reset_at=(minute_ago + timedelta(minutes=1)).isoformat(),
+                    retry_after_ms=60000,
+                )
+
+            if requests_last_hour >= self.rate_limit_config.requests_per_hour:
+                return RateLimitStatus(
+                    allowed=False,
+                    remaining=0,
+                    reset_at=(hour_ago + timedelta(hours=1)).isoformat(),
+                    retry_after_ms=3600000,
+                )
+
+            # Record this request
+            self._rate_limit_counters[identifier].append(now)
+
+            remaining = min(
+                self.rate_limit_config.requests_per_minute - requests_last_minute - 1,
+                self.rate_limit_config.requests_per_hour - requests_last_hour - 1,
+            )
+
+            return RateLimitStatus(
+                allowed=True,
+                remaining=remaining,
+                reset_at=(now + timedelta(minutes=1)).isoformat(),
+            )
+
+    def validate_input(self, input_text: str) -> InputValidationResult:
+        """
+        Validate input for security issues (prompt injection, etc.).
+
+        Args:
+            input_text: Input to validate
+
+        Returns:
+            InputValidationResult
+        """
+        warnings: list[str] = []
+        blocked_patterns: list[str] = []
+
+        # Check length
+        if len(input_text) > self.input_validation_config.max_input_length:
+            return InputValidationResult(
+                valid=False,
+                sanitized_input=None,
+                blocked_patterns_found=["input_too_long"],
+                warnings=["Input exceeds maximum length"],
+            )
+
+        # Check blocked patterns
+        for pattern in self.input_validation_config.blocked_patterns:
+            if re.search(pattern, input_text, re.IGNORECASE):
+                blocked_patterns.append(pattern)
+
+        if blocked_patterns:
+            return InputValidationResult(
+                valid=False,
+                sanitized_input=None,
+                blocked_patterns_found=blocked_patterns,
+                warnings=["Potentially dangerous patterns detected"],
+            )
+
+        # Sanitize if enabled
+        sanitized = input_text
+        if self.input_validation_config.escape_special_chars:
+            # Escape HTML-like characters
+            sanitized = sanitized.replace("<", "&lt;")
+            sanitized = sanitized.replace(">", "&gt;")
+            sanitized = sanitized.replace("&", "&amp;")
+
+        return InputValidationResult(
+            valid=True,
+            sanitized_input=sanitized,
+            blocked_patterns_found=[],
+            warnings=warnings,
+        )
+
+    def add_trusted_issuer(self, issuer: str) -> None:
+        """Add a trusted credential issuer."""
+        if issuer not in self.trusted_issuers:
+            self.trusted_issuers.append(issuer)
+
+    def add_trusted_domain(self, domain: str) -> None:
+        """Add a trusted SPIFFE domain."""
+        if domain not in self.trusted_domains:
+            self.trusted_domains.append(domain)
+
+    def get_audit_log(
+        self,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        event_types: Optional[list[SecurityEventType]] = None,
+    ) -> list[SecurityAuditEntry]:
+        """
+        Get audit log entries.
+
+        Args:
+            start_time: Filter by start time
+            end_time: Filter by end time
+            event_types: Filter by event types
+
+        Returns:
+            List of audit entries
+        """
+        with self._lock:
+            entries = self._audit_log.copy()
+
+        if start_time:
+            entries = [
+                e for e in entries
+                if datetime.fromisoformat(e.timestamp) >= start_time
+            ]
+
+        if end_time:
+            entries = [
+                e for e in entries
+                if datetime.fromisoformat(e.timestamp) <= end_time
+            ]
+
+        if event_types:
+            entries = [e for e in entries if e.event_type in event_types]
+
+        return entries
+
+    # ============================================
+    # Private Helper Methods
+    # ============================================
+
+    def _validate_credential(self, credential: Credential) -> CredentialValidation:
+        """Validate a single credential."""
+        warnings: list[str] = []
+        error: Optional[str] = None
+        status = CredentialStatus.VALID
+        trust_level = TrustLevel.MEDIUM
+        valid_scopes = credential.scope.copy()
+        invalid_scopes: list[str] = []
+
+        # Check if revoked
+        if credential.credential_id in self._revoked_credentials:
+            status = CredentialStatus.REVOKED
+            error = "Credential has been revoked"
+            valid_scopes = []
+            invalid_scopes = credential.scope.copy()
+            trust_level = TrustLevel.NONE
+
+        # Check expiration
+        elif credential.expires_at:
+            try:
+                expires = datetime.fromisoformat(
+                    credential.expires_at.replace("Z", "+00:00").replace("+00:00", "")
+                )
+                if datetime.now() > expires:
+                    status = CredentialStatus.EXPIRED
+                    error = "Credential has expired"
+                    valid_scopes = []
+                    invalid_scopes = credential.scope.copy()
+                    trust_level = TrustLevel.NONE
+                elif datetime.now() > expires - timedelta(hours=1):
+                    warnings.append("Credential expires within 1 hour")
+            except ValueError:
+                warnings.append("Could not parse expiration date")
+
+        # Check not_before
+        if credential.not_before and status == CredentialStatus.VALID:
+            try:
+                not_before = datetime.fromisoformat(
+                    credential.not_before.replace("Z", "+00:00").replace("+00:00", "")
+                )
+                if datetime.now() < not_before:
+                    status = CredentialStatus.INVALID
+                    error = "Credential not yet valid"
+                    valid_scopes = []
+                    invalid_scopes = credential.scope.copy()
+                    trust_level = TrustLevel.NONE
+            except ValueError:
+                warnings.append("Could not parse not_before date")
+
+        # Check issuer trust
+        if status == CredentialStatus.VALID:
+            if self.trusted_issuers and credential.issuer not in self.trusted_issuers:
+                warnings.append(f"Issuer {credential.issuer} is not in trusted list")
+                trust_level = TrustLevel.LOW
+
+        # Adjust trust level based on credential type
+        if status == CredentialStatus.VALID:
+            if credential.credential_type in [CredentialType.MTLS_CERT, CredentialType.SPIFFE]:
+                trust_level = TrustLevel.HIGH
+            elif credential.credential_type == CredentialType.API_KEY:
+                trust_level = TrustLevel.LOW
+
+        return CredentialValidation(
+            credential_id=credential.credential_id,
+            status=status,
+            trust_level=trust_level,
+            valid_scopes=valid_scopes,
+            invalid_scopes=invalid_scopes,
+            expires_at=credential.expires_at,
+            warnings=warnings,
+            error=error,
+        )
+
+    def _validate_trust_chain(
+        self,
+        chain: list[TrustChainEntry],
+        target_subject: str,
+    ) -> TrustChainValidation:
+        """Validate a trust chain."""
+        warnings: list[str] = []
+        broken_links: list[TrustChainBreak] = []
+        effective_permissions: set[str] = set()
+
+        if not chain:
+            return TrustChainValidation(
+                valid=False,
+                chain_length=0,
+                root_issuer="",
+                final_subject="",
+                effective_trust_level=TrustLevel.NONE,
+                effective_permissions=[],
+                broken_links=None,
+                warnings=["Empty trust chain"],
+            )
+
+        # Check chain continuity
+        for i, entry in enumerate(chain):
+            # Check expiration
+            try:
+                expires = datetime.fromisoformat(
+                    entry.expires_at.replace("Z", "+00:00").replace("+00:00", "")
+                )
+                if datetime.now() > expires:
+                    broken_links.append(TrustChainBreak(
+                        position=i,
+                        issuer=entry.issuer,
+                        subject=entry.subject,
+                        reason="Entry has expired",
+                        severity=SecuritySeverity.CRITICAL,
+                    ))
+            except ValueError:
+                warnings.append(f"Could not parse expiration for entry {i}")
+
+            # Check chain continuity (subject should match next issuer)
+            if i < len(chain) - 1:
+                next_entry = chain[i + 1]
+                if entry.subject != next_entry.issuer:
+                    broken_links.append(TrustChainBreak(
+                        position=i,
+                        issuer=entry.subject,
+                        subject=next_entry.issuer,
+                        reason="Chain discontinuity - subject does not match next issuer",
+                        severity=SecuritySeverity.CRITICAL,
+                    ))
+
+            # Collect permissions (intersection for security)
+            if i == 0:
+                effective_permissions = set(entry.permissions)
+            else:
+                effective_permissions &= set(entry.permissions)
+
+        # Check final subject matches target
+        if chain[-1].subject != target_subject:
+            warnings.append(f"Final subject {chain[-1].subject} does not match target {target_subject}")
+
+        # Determine trust level
+        trust_level = TrustLevel.HIGH if not broken_links else TrustLevel.LOW
+        if any(bl.severity == SecuritySeverity.CRITICAL for bl in broken_links):
+            trust_level = TrustLevel.NONE
+
+        # Reduce trust for transitive delegations
+        transitive_count = sum(1 for e in chain if e.delegation_type == DelegationType.TRANSITIVE)
+        if transitive_count > 2:
+            warnings.append("Many transitive delegations in chain")
+            if trust_level == TrustLevel.HIGH:
+                trust_level = TrustLevel.MEDIUM
+
+        return TrustChainValidation(
+            valid=len(broken_links) == 0,
+            chain_length=len(chain),
+            root_issuer=chain[0].issuer,
+            final_subject=chain[-1].subject,
+            effective_trust_level=trust_level,
+            effective_permissions=list(effective_permissions),
+            broken_links=broken_links if broken_links else None,
+            warnings=warnings,
+        )
+
+    def _validate_spiffe_id(self, spiffe_id: str) -> list[SecurityWarning]:
+        """Validate a SPIFFE ID format."""
+        warnings: list[SecurityWarning] = []
+
+        # SPIFFE ID format: spiffe://trust-domain/path
+        if not spiffe_id.startswith("spiffe://"):
+            warnings.append(SecurityWarning(
+                warning_id=str(uuid.uuid4()),
+                severity=SecuritySeverity.WARNING,
+                category="spiffe",
+                message="SPIFFE ID does not start with spiffe://",
+                recommendation="Use format: spiffe://trust-domain/path",
+            ))
+            return warnings
+
+        # Extract trust domain
+        parts = spiffe_id[9:].split("/", 1)  # Remove "spiffe://"
+        if not parts or not parts[0]:
+            warnings.append(SecurityWarning(
+                warning_id=str(uuid.uuid4()),
+                severity=SecuritySeverity.WARNING,
+                category="spiffe",
+                message="SPIFFE ID missing trust domain",
+            ))
+            return warnings
+
+        trust_domain = parts[0]
+
+        # Check if trust domain is in trusted list
+        if self.trusted_domains and trust_domain not in self.trusted_domains:
+            warnings.append(SecurityWarning(
+                warning_id=str(uuid.uuid4()),
+                severity=SecuritySeverity.WARNING,
+                category="spiffe",
+                message=f"Trust domain {trust_domain} is not in trusted list",
+                recommendation="Add trust domain to trusted list or verify identity",
+            ))
+
+        return warnings
+
+    def _validate_session_token(self, session_token: str) -> list[SecurityWarning]:
+        """Validate a session token."""
+        warnings: list[SecurityWarning] = []
+
+        with self._lock:
+            session = self._sessions.get(session_token)
+
+        if not session:
+            warnings.append(SecurityWarning(
+                warning_id=str(uuid.uuid4()),
+                severity=SecuritySeverity.WARNING,
+                category="session",
+                message="Session token not found",
+            ))
+            return warnings
+
+        # Check expiration
+        try:
+            expires = datetime.fromisoformat(
+                session.expires_at.replace("Z", "+00:00").replace("+00:00", "")
+            )
+            if datetime.now() > expires:
+                warnings.append(SecurityWarning(
+                    warning_id=str(uuid.uuid4()),
+                    severity=SecuritySeverity.CRITICAL,
+                    category="session",
+                    message="Session has expired",
+                    recommendation="Create a new session",
+                ))
+            elif datetime.now() > expires - timedelta(minutes=5):
+                warnings.append(SecurityWarning(
+                    warning_id=str(uuid.uuid4()),
+                    severity=SecuritySeverity.INFO,
+                    category="session",
+                    message="Session expires within 5 minutes",
+                    recommendation="Consider refreshing session",
+                ))
+        except ValueError:
+            warnings.append(SecurityWarning(
+                warning_id=str(uuid.uuid4()),
+                severity=SecuritySeverity.WARNING,
+                category="session",
+                message="Could not parse session expiration",
+            ))
+
+        return warnings
+
+    def _calculate_trust_level(
+        self,
+        credential_validations: list[CredentialValidation],
+        trust_chain_validation: TrustChainValidation,
+    ) -> TrustLevel:
+        """Calculate overall trust level."""
+        if not credential_validations:
+            return TrustLevel.NONE
+
+        # Get highest credential trust level
+        credential_levels = [cv.trust_level for cv in credential_validations if cv.status == CredentialStatus.VALID]
+        if not credential_levels:
+            return TrustLevel.NONE
+
+        # Order of trust levels
+        level_order = [TrustLevel.NONE, TrustLevel.LOW, TrustLevel.MEDIUM, TrustLevel.HIGH, TrustLevel.ABSOLUTE]
+
+        max_cred_level = max(credential_levels, key=lambda x: level_order.index(x))
+
+        # Combine with trust chain level
+        if trust_chain_validation.valid:
+            chain_level = trust_chain_validation.effective_trust_level
+            # Take the minimum of credential and chain levels
+            return min(max_cred_level, chain_level, key=lambda x: level_order.index(x))
+
+        # If trust chain is invalid, reduce trust level
+        if max_cred_level in [TrustLevel.HIGH, TrustLevel.ABSOLUTE]:
+            return TrustLevel.MEDIUM
+
+        return max_cred_level
+
+    def _calculate_validation_expiry(
+        self,
+        credential_validations: list[CredentialValidation],
+    ) -> str:
+        """Calculate when validation expires (earliest credential expiry)."""
+        expires_dates: list[datetime] = []
+
+        for cv in credential_validations:
+            if cv.status == CredentialStatus.VALID and cv.expires_at:
+                try:
+                    expires = datetime.fromisoformat(
+                        cv.expires_at.replace("Z", "+00:00").replace("+00:00", "")
+                    )
+                    expires_dates.append(expires)
+                except ValueError:
+                    pass
+
+        if expires_dates:
+            return min(expires_dates).isoformat()
+
+        # Default to 1 hour if no expiry found
+        return (datetime.now() + timedelta(hours=1)).isoformat()
+
+    def _log_audit(self, entry: SecurityAuditEntry) -> None:
+        """Log an audit entry."""
+        with self._lock:
+            self._audit_log.append(entry)
+
+        if self.audit_callback:
+            try:
+                self.audit_callback(entry)
+            except Exception:
+                pass  # Don't fail on audit callback errors
+
+
+# ============================================
+# Utility Functions
+# ============================================
+
+
+def create_credential(
+    credential_type: CredentialType,
+    value: str,
+    issuer: str,
+    subject: str,
+    scope: list[str],
+    expires_in_hours: int = 24,
+) -> Credential:
+    """
+    Helper to create a credential.
+
+    Args:
+        credential_type: Type of credential
+        value: Credential value (will be hashed)
+        issuer: Credential issuer
+        subject: Credential subject
+        scope: Permission scopes
+        expires_in_hours: Hours until expiration
+
+    Returns:
+        New Credential instance
+    """
+    now = datetime.now()
+
+    # Hash the value
+    hashed_value = hashlib.sha256(value.encode()).hexdigest()
+
+    return Credential(
+        credential_id=str(uuid.uuid4()),
+        credential_type=credential_type,
+        value=hashed_value,
+        issuer=issuer,
+        subject=subject,
+        scope=scope,
+        issued_at=now.isoformat(),
+        expires_at=(now + timedelta(hours=expires_in_hours)).isoformat(),
+    )
+
+
+def create_trust_chain_entry(
+    issuer: str,
+    subject: str,
+    delegation_type: DelegationType,
+    permissions: list[str],
+    expires_in_hours: int = 24,
+    parent_entry_id: Optional[str] = None,
+) -> TrustChainEntry:
+    """
+    Helper to create a trust chain entry.
+
+    Args:
+        issuer: Entity granting trust
+        subject: Entity receiving trust
+        delegation_type: Type of delegation
+        permissions: Permissions granted
+        expires_in_hours: Hours until expiration
+        parent_entry_id: ID of parent entry
+
+    Returns:
+        New TrustChainEntry instance
+    """
+    now = datetime.now()
+
+    return TrustChainEntry(
+        entry_id=str(uuid.uuid4()),
+        issuer=issuer,
+        subject=subject,
+        delegation_type=delegation_type,
+        permissions=permissions,
+        issued_at=now.isoformat(),
+        expires_at=(now + timedelta(hours=expires_in_hours)).isoformat(),
+        parent_entry_id=parent_entry_id,
+    )
+
+
+def create_security_context(
+    requester: AgentSecurityIdentity,
+    credentials: list[Credential],
+    trust_chain: Optional[list[TrustChainEntry]] = None,
+    session_token: Optional[str] = None,
+    source_ip: Optional[str] = None,
+) -> SecurityContext:
+    """
+    Helper to create a security context.
+
+    Args:
+        requester: Agent identity
+        credentials: Credentials to include
+        trust_chain: Trust chain entries
+        session_token: Active session token
+        source_ip: Source IP address
+
+    Returns:
+        New SecurityContext instance
+    """
+    return SecurityContext(
+        context_id=str(uuid.uuid4()),
+        requester=requester,
+        credentials=credentials,
+        trust_chain=trust_chain or [],
+        request_timestamp=datetime.now().isoformat(),
+        session_token=session_token,
+        request_nonce=secrets.token_urlsafe(16),
+        source_ip=source_ip,
+    )
