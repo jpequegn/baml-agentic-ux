@@ -33,6 +33,22 @@ from .jargon import (
     SimplificationResult,
 )
 
+from .disability_evaluators import (
+    Barrier,
+    BarrierAnalysis,
+    BarrierCategory,
+    CognitiveAccessibilityEvaluator,
+    CombinedDisabilityEvaluator,
+    DisabilityEvaluation,
+    DisabilityEvaluator,
+    DisabilityType,
+    HearingAccessibilityEvaluator,
+    MotorAccessibilityEvaluator,
+    NeurologicalAccessibilityEvaluator,
+    SpeechAccessibilityEvaluator,
+    VisualAccessibilityEvaluator,
+)
+
 __all__ = [
     # Readability
     "ReadabilityAnalyzer",
@@ -55,4 +71,18 @@ __all__ = [
     "JargonDetector",
     "JargonTerm",
     "SimplificationResult",
+    # Disability Evaluators
+    "Barrier",
+    "BarrierAnalysis",
+    "BarrierCategory",
+    "CognitiveAccessibilityEvaluator",
+    "CombinedDisabilityEvaluator",
+    "DisabilityEvaluation",
+    "DisabilityEvaluator",
+    "DisabilityType",
+    "HearingAccessibilityEvaluator",
+    "MotorAccessibilityEvaluator",
+    "NeurologicalAccessibilityEvaluator",
+    "SpeechAccessibilityEvaluator",
+    "VisualAccessibilityEvaluator",
 ]
