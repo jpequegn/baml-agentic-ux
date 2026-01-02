@@ -11,9 +11,24 @@ from .readability import (
     SentenceAnalysis,
 )
 
+from .checker import (
+    AccessibilityCheckResult,
+    AccessibilityViolation,
+    ComplianceLevel,
+    LUIAccessibilityChecker,
+    ViolationSeverity,
+)
+
 __all__ = [
+    # Readability
     "ReadabilityAnalyzer",
     "ReadabilityMetrics",
     "SentenceAnalyzer",
     "SentenceAnalysis",
+    # Checker
+    "AccessibilityCheckResult",
+    "AccessibilityViolation",
+    "ComplianceLevel",
+    "LUIAccessibilityChecker",
+    "ViolationSeverity",
 ]
