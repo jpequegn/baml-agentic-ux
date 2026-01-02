@@ -65,6 +65,21 @@ from .timing import (
     TimingViolation,
 )
 
+from .seizure_safety import (
+    AnimationConfig,
+    AnimationSafetyResult,
+    ContentConfig,
+    FlashAnalysis,
+    FlashType,
+    MediaConfig,
+    SeizureCriterion,
+    SeizureSafetyChecker,
+    SeizureSafetyResult,
+    SeizureViolation,
+    check_animation_safety,
+    check_flash_safety,
+)
+
 __all__ = [
     # Readability
     "ReadabilityAnalyzer",
@@ -115,4 +130,17 @@ __all__ = [
     "TimingThreshold",
     "TimingValidationResult",
     "TimingViolation",
+    # Seizure Safety
+    "AnimationConfig",
+    "AnimationSafetyResult",
+    "ContentConfig",
+    "FlashAnalysis",
+    "FlashType",
+    "MediaConfig",
+    "SeizureCriterion",
+    "SeizureSafetyChecker",
+    "SeizureSafetyResult",
+    "SeizureViolation",
+    "check_animation_safety",
+    "check_flash_safety",
 ]
