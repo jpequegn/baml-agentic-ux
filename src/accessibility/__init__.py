@@ -19,6 +19,13 @@ from .checker import (
     ViolationSeverity,
 )
 
+from .schema_checker import (
+    ComponentAccessibilityEval,
+    SchemaAccessibilityChecker,
+    SchemaAccessibilityResult,
+    SchemaViolation,
+)
+
 __all__ = [
     # Readability
     "ReadabilityAnalyzer",
@@ -31,4 +38,9 @@ __all__ = [
     "ComplianceLevel",
     "LUIAccessibilityChecker",
     "ViolationSeverity",
+    # Schema Checker
+    "ComponentAccessibilityEval",
+    "SchemaAccessibilityChecker",
+    "SchemaAccessibilityResult",
+    "SchemaViolation",
 ]
