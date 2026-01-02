@@ -88,6 +88,38 @@ from .capability_matcher import (
     CapabilityMatcher,
 )
 
+from .negotiation_state import (
+    # Negotiation enums
+    NegotiationStatus,
+    NegotiationAction,
+    RequestPriority,
+    ConditionType,
+    BillingModel,
+    NegotiationStrategy,
+    # Rate limiting
+    RateLimit,
+    # Negotiation components
+    CapabilityRequest,
+    OfferCondition,
+    CapabilityOffer,
+    NegotiationTerms,
+    NegotiationProposal,
+    NegotiationTurn,
+    NegotiationSession,
+    # Agreement types
+    GrantedCapability,
+    Agreement,
+    # Evaluation types
+    MinimumTerms,
+    EvaluationPolicy,
+    GapAnalysis,
+    ProposalEvaluation,
+    # Core classes
+    NegotiationStateMachine,
+    ProposalEvaluator,
+    NegotiationManager,
+)
+
 __all__ = [
     # Protocol types
     "ProtocolType",
@@ -164,4 +196,33 @@ __all__ = [
     "CapabilityMatchResponse",
     # Matcher class
     "CapabilityMatcher",
+    # Negotiation enums
+    "NegotiationStatus",
+    "NegotiationAction",
+    "RequestPriority",
+    "ConditionType",
+    "BillingModel",
+    "NegotiationStrategy",
+    # Rate limiting
+    "RateLimit",
+    # Negotiation components
+    "CapabilityRequest",
+    "OfferCondition",
+    "CapabilityOffer",
+    "NegotiationTerms",
+    "NegotiationProposal",
+    "NegotiationTurn",
+    "NegotiationSession",
+    # Agreement types
+    "GrantedCapability",
+    "Agreement",
+    # Evaluation types
+    "MinimumTerms",
+    "EvaluationPolicy",
+    "GapAnalysis",
+    "ProposalEvaluation",
+    # Core classes
+    "NegotiationStateMachine",
+    "ProposalEvaluator",
+    "NegotiationManager",
 ]
