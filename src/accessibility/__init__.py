@@ -19,6 +19,13 @@ from .checker import (
     ViolationSeverity,
 )
 
+from .schema_checker import (
+    ComponentAccessibilityEval,
+    SchemaAccessibilityChecker,
+    SchemaAccessibilityResult,
+    SchemaViolation,
+)
+
 from .jargon import (
     JargonCategory,
     JargonDetector,
@@ -38,6 +45,11 @@ __all__ = [
     "ComplianceLevel",
     "LUIAccessibilityChecker",
     "ViolationSeverity",
+    # Schema Checker
+    "ComponentAccessibilityEval",
+    "SchemaAccessibilityChecker",
+    "SchemaAccessibilityResult",
+    "SchemaViolation",
     # Jargon Detection
     "JargonCategory",
     "JargonDetector",

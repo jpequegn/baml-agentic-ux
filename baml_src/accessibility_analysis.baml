@@ -234,6 +234,117 @@ class AccessibleRewrite {
 }
 
 // ============================================
+// Schema-Level Accessibility Evaluation
+// Issue #70 - Task 4.4: Schema Accessibility Evaluator
+// ============================================
+
+/// A schema violation with location information
+class SchemaAccessibilityViolation {
+  criterion string @description("Criterion reference (e.g., 'A.1.1', 'AA.3.1')")
+  severity ViolationSeverity @description("Severity of this violation")
+  description string @description("Human-readable description of the issue")
+  remediation string @description("Suggested fix for the issue")
+  location string @description("Path to the violation (e.g., 'components[0].feedback.success_template')")
+  element string? @description("Specific text or value that caused the violation")
+}
+
+/// Accessibility evaluation for a single component
+class ComponentAccessibilityEval {
+  component_id string @description("Unique component identifier")
+  component_type string @description("Type of component (ACTION, QUERY, etc.)")
+  score float @description("Component accessibility score 0.0-1.0")
+  passes bool @description("Whether component passes target level")
+  achieved_level ComplianceLevel? @description("Highest level achieved by component")
+  violations SchemaAccessibilityViolation[] @description("Violations for this component")
+}
+
+/// Summary of accessibility findings
+class AccessibilitySummary {
+  total_violations int @description("Total number of violations")
+  critical_count int @description("Number of critical violations")
+  major_count int @description("Number of major violations")
+  minor_count int @description("Number of minor violations")
+  advisory_count int @description("Number of advisory notices")
+  passing_components int @description("Number of components that pass")
+  total_components int @description("Total number of components")
+  key_issues string[] @description("Top issues to address")
+}
+
+/// Complete schema accessibility evaluation result
+class LUIAccessibilityEvaluation {
+  schema_name string @description("Name of the schema evaluated")
+  target_level ComplianceLevel @description("Target compliance level")
+  achieved_level ComplianceLevel? @description("Highest level achieved")
+  overall_score float @description("Overall accessibility score 0.0-1.0")
+  passes bool @description("Whether schema passes target level")
+  component_evaluations ComponentAccessibilityEval[] @description("Per-component evaluations")
+  schema_violations SchemaAccessibilityViolation[] @description("Schema-level violations")
+  summary AccessibilitySummary @description("Summary of findings")
+  recommendations string[] @description("Prioritized recommendations")
+  confidence float @description("Confidence in this evaluation (0.0-1.0)")
+}
+
+/// Evaluate a complete LUI schema for accessibility compliance
+function EvaluateLUIAccessibility(
+  schema InterfaceSchema,
+  target_level ComplianceLevel
+) -> LUIAccessibilityEvaluation {
+  client CustomSonnet4
+  prompt #"
+    Evaluate this LUI (Language User Interface) schema for LUIAG accessibility compliance.
+
+    Schema to evaluate:
+    {{ schema }}
+
+    Target compliance level: {{ target_level }}
+
+    Perform these checks:
+
+    1. SCHEMA-LEVEL CHECKS:
+       - Verify accessibility configuration is present (schema.accessibility)
+       - Check for default_config in accessibility settings
+       - Verify supported_compliance_levels includes target level
+       - Check timing configurations meet level requirements
+
+    2. COMPONENT CHECKS (for each component):
+       - Verify AccessibilityConfig is present
+       - Check for screen_reader_label
+       - At AA/AAA: Check for voice_hints
+       - Evaluate feedback templates for readability
+
+    3. FEEDBACK TEMPLATE ANALYSIS:
+       - Check success_template, error_template, progress_template
+       - Apply reading level thresholds:
+         * Level A: max grade 12, max 35 words/sentence
+         * Level AA: max grade 8, max 25 words/sentence
+         * Level AAA: max grade 6, max 20 words/sentence
+
+    4. TIMING REQUIREMENTS:
+       - Level A: min timeout 20 seconds
+       - Level AA: min timeout 30 seconds, timeout extension required
+       - Level AAA: min timeout 60 seconds, full extension support
+
+    For each violation:
+    - Assign criterion code (A.x.x, AA.x.x, AAA.x.x)
+    - Set severity (CRITICAL, MAJOR, MINOR, ADVISORY)
+    - Provide location path (e.g., "components[0].feedback.success_template")
+    - Include specific remediation
+
+    Calculate scores:
+    - Component scores: 1.0 minus weighted violations
+    - Overall: 40% schema-level + 60% average component score
+
+    Determine achieved level:
+    - AAA: No CRITICAL/MAJOR violations at any level
+    - AA: No CRITICAL/MAJOR at A or AA level
+    - A: No CRITICAL/MAJOR at A level
+    - null: Has A-level CRITICAL/MAJOR violations
+
+    {{ ctx.output_format }}
+  "#
+}
+
+// ============================================
 // Jargon Detection Types (Issue #71 - Task 4.5)
 // ============================================
 
