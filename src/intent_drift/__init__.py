@@ -7,9 +7,23 @@ move outside the supported capabilities of the system.
 Issue #78 - Task 5.1: Drift Analysis Types
 Issue #79 - Task 5.2: Semantic Analyzer
 Issue #80 - Task 5.3: Drift Classifier
+Issue #81 - Task 5.4: Confidence Assessor
 Part of #28 - Phase 5: Intent Drift Detection
 """
 
+from .confidence_assessor import (
+    # Thresholds
+    ConfidenceThresholds,
+    # Enums
+    AssessmentAction,
+    # Data Classes
+    AssessmentResult,
+    CalibrationResult,
+    ConfidenceAssessorConfig,
+    IntentResult,
+    # Main Class
+    ConfidenceAssessor,
+)
 from .drift_classifier import (
     # Pattern definitions
     ABSTRACTION_PATTERNS,
@@ -75,6 +89,14 @@ from .types import (
 )
 
 __all__ = [
+    # Confidence Assessor
+    "ConfidenceThresholds",
+    "AssessmentAction",
+    "AssessmentResult",
+    "CalibrationResult",
+    "ConfidenceAssessorConfig",
+    "IntentResult",
+    "ConfidenceAssessor",
     # Drift Classifier
     "ABSTRACTION_PATTERNS",
     "META_PATTERNS",
