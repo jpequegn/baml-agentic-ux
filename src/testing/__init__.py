@@ -4,6 +4,7 @@ This module provides tools for defining and executing conversation tests.
 
 Issue #89 - Task 6.1: Test Definition Types
 Issue #90 - Task 6.2: Test Loader & Validator
+Issue #92 - Task 6.4: Quality Scorer
 Part of #29 - Phase 6: Conversational Testing Framework
 """
 
@@ -16,6 +17,19 @@ from .loader import (
     ValidationSeverity,
     # Main Loader
     ConversationTestLoader,
+)
+from .quality_scorer import (
+    # Score Breakdowns
+    CoherenceBreakdown,
+    ContextRetentionBreakdown,
+    ConversationQuality,
+    DimensionScore,
+    NaturalnessBreakdown,
+    # Enums and Config
+    QualityDimension,
+    QualityScorerConfig,
+    # Main Scorer
+    QualityScorer,
 )
 from .types import (
     # Core Enums
@@ -71,6 +85,15 @@ __all__ = [
     "ValidationResult",
     "ValidationSeverity",
     "ConversationTestLoader",
+    # Quality Scorer Types
+    "CoherenceBreakdown",
+    "ContextRetentionBreakdown",
+    "ConversationQuality",
+    "DimensionScore",
+    "NaturalnessBreakdown",
+    "QualityDimension",
+    "QualityScorerConfig",
+    "QualityScorer",
     # Core Enums
     "AssertionOperator",
     "AssertionSeverity",
