@@ -1,0 +1,36 @@
+# Test suite definition
+suite_id: suite-core-001
+name: Core Conversation Tests
+description: Suite containing core conversation test cases
+tags:
+  - core
+  - smoke
+
+execution_order: priority
+stop_on_failure: false
+parallel_execution: true
+
+default_setup:
+  initial_context:
+    suite_mode: "true"
+  system_state:
+    active_capabilities:
+      - weather
+      - greeting
+
+default_thresholds:
+  coherence_threshold: 0.80
+  naturalness_threshold: 0.75
+
+tests:
+  - test_id: inline-test-001
+    name: Inline Test
+    priority: high
+    turns:
+      - role: user
+        input: "Hi"
+      - role: assistant
+        input: "Hello!"
+
+test_paths:
+  - "valid_simple.yaml"

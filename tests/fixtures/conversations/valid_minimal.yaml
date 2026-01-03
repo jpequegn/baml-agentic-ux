@@ -1,0 +1,7 @@
+# Minimal valid test with only required fields
+test_id: test-minimal-001
+name: Minimal Test
+
+turns:
+  - role: user
+    input: "Hello"

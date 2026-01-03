@@ -1,0 +1,24 @@
+# Simple valid conversation test
+test_id: test-greeting-001
+name: Simple Greeting Test
+description: Tests basic greeting interaction
+category: intent_recognition
+priority: high
+tags:
+  - greeting
+  - smoke-test
+  - core
+
+turns:
+  - turn_number: 1
+    role: user
+    input: "Hello!"
+    expected_intent: greeting
+
+  - turn_number: 2
+    role: assistant
+    input: "Hi there! How can I help you today?"
+
+expected_outcome:
+  success_condition: all_pass
+  final_intent: greeting

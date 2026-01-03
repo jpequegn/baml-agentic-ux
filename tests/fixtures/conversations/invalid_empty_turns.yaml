@@ -1,0 +1,4 @@
+# Invalid test - empty turns array
+test_id: test-empty-turns
+name: Test With Empty Turns
+turns: []
