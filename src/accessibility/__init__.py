@@ -80,6 +80,21 @@ from .seizure_safety import (
     check_flash_safety,
 )
 
+from .aria import (
+    ARIAConfig,
+    ARIALiveRegionGenerator,
+    ARIAPoliteness,
+    ARIARelevant,
+    ARIARole,
+    ContentType,
+    LiveRegionResult,
+    ScreenReader,
+    ScreenReaderHint,
+    generate_error_alert,
+    generate_live_region,
+    generate_status_update,
+)
+
 from .report import (
     AccessibilityReport,
     AccessibilityReportGenerator,
@@ -152,6 +167,19 @@ __all__ = [
     "SeizureViolation",
     "check_animation_safety",
     "check_flash_safety",
+    # ARIA Live Regions
+    "ARIAConfig",
+    "ARIALiveRegionGenerator",
+    "ARIAPoliteness",
+    "ARIARelevant",
+    "ARIARole",
+    "ContentType",
+    "LiveRegionResult",
+    "ScreenReader",
+    "ScreenReaderHint",
+    "generate_error_alert",
+    "generate_live_region",
+    "generate_status_update",
     # Report Generator
     "AccessibilityReport",
     "AccessibilityReportGenerator",
