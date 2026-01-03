@@ -1,0 +1,134 @@
+# Complex valid conversation test with all features
+test_id: test-weather-flow-001
+name: Complete Weather Inquiry Flow
+description: Tests a full weather inquiry including location extraction and response quality
+category: dialogue_flow
+priority: critical
+tags:
+  - weather
+  - integration
+  - entities
+  - quality
+
+setup:
+  initial_context:
+    session_id: "test-session-123"
+    user_authenticated: "true"
+  initial_entities:
+    - entity_type: location
+      value: "default_city"
+      slot_name: last_known_location
+      confidence: 0.9
+  user_profile:
+    user_id: test-user-001
+    expertise_level: intermediate
+    preferences:
+      temperature_unit: celsius
+      language: en
+    history_summary: "Previous weather inquiries"
+    accessibility_needs:
+      - screen_reader
+  system_state:
+    active_capabilities:
+      - weather
+      - location
+    disabled_capabilities:
+      - payments
+    feature_flags:
+      enhanced_weather: true
+  mock_responses:
+    - trigger_pattern: "weather_api_*"
+      response_type: api_response
+      response_data: '{"temp": 22, "condition": "sunny", "humidity": 45}'
+      delay_ms: 100
+  environment_variables:
+    WEATHER_API_KEY: test-key-123
+
+turns:
+  - turn_number: 1
+    role: user
+    input: "What's the weather like?"
+    expected_intent: get_weather
+    assertions:
+      - assertion_id: intent-check-1
+        assertion_type: intent_match
+        target: intent
+        operator: equals
+        expected_value: get_weather
+        severity: critical
+        message: "Must detect weather intent"
+
+  - turn_number: 2
+    role: assistant
+    input: "I'd be happy to help with the weather. Which city would you like to know about?"
+    assertions:
+      - assertion_id: response-check-1
+        assertion_type: response_contains
+        target: response
+        operator: contains
+        expected_value: "city"
+        severity: error
+
+  - turn_number: 3
+    role: user
+    input: "New York"
+    expected_intent: provide_location
+    expected_entities:
+      - entity_type: location
+        value: "New York"
+        required: true
+        slot_name: city
+    context_requirements:
+      - key: pending_weather_request
+        match_type: exists
+
+  - turn_number: 4
+    role: assistant
+    input: "The weather in New York is 22°C and sunny with 45% humidity."
+    assertions:
+      - assertion_id: response-temp
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "\\d+°[CF]"
+        severity: error
+      - assertion_id: quality-check
+        assertion_type: quality_score
+        target: coherence
+        operator: greater_or_equal
+        threshold: 0.85
+        severity: warning
+
+expected_outcome:
+  success_condition: threshold
+  min_assertions_passed: 3
+  required_assertions:
+    - intent-check-1
+    - response-temp
+  max_warnings: 2
+  final_intent: weather_provided
+  final_context_state:
+    last_query_type: weather
+    city: New York
+  quality_requirements:
+    min_coherence: 0.85
+    min_naturalness: 0.80
+    min_accuracy: 0.90
+    max_drift_score: 0.30
+    min_confidence: 0.75
+
+quality_thresholds:
+  coherence_threshold: 0.85
+  naturalness_threshold: 0.80
+  accuracy_threshold: 0.90
+  relevance_threshold: 0.75
+  confidence_threshold: 0.70
+  max_drift_threshold: 0.50
+  latency_threshold_ms: 1500
+  strict_mode: true
+
+timeout_seconds: 30
+metadata:
+  author: test-team
+  version: "1.0"
+  last_updated: "2024-01-15"

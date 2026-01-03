@@ -1,0 +1,5 @@
+# Invalid test - missing required fields
+name: Test Without ID
+# Missing test_id
+# Missing turns
+description: This test is missing required fields

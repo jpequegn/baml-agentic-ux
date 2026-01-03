@@ -1,0 +1,13 @@
+# Invalid test - bad enum values
+test_id: test-bad-enum
+name: Test With Bad Enum
+category: nonexistent_category
+priority: super_high
+
+turns:
+  - turn_number: 1
+    role: unknown_role
+    input: "Hello"
+
+expected_outcome:
+  success_condition: invalid_condition

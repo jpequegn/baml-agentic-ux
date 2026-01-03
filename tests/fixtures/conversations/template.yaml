@@ -1,0 +1,30 @@
+# Test template for parameterized tests
+template_id: greeting-template
+name_pattern: "Greeting Test - {language}"
+
+base_test:
+  category: intent_recognition
+  priority: medium
+  tags:
+    - greeting
+    - "{language}"
+  turns:
+    - role: user
+      input: "{greeting}"
+      expected_intent: greeting
+    - role: assistant
+      input: "{response}"
+  expected_outcome:
+    success_condition: all_pass
+    final_intent: greeting
+
+parameters:
+  - language: english
+    greeting: "Hello"
+    response: "Hi there!"
+  - language: spanish
+    greeting: "Hola"
+    response: "Hola! Como puedo ayudarte?"
+  - language: french
+    greeting: "Bonjour"
+    response: "Bonjour! Comment puis-je vous aider?"
