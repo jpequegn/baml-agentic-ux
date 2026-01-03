@@ -95,6 +95,15 @@ from .aria import (
     generate_status_update,
 )
 
+from .report import (
+    AccessibilityReport,
+    AccessibilityReportGenerator,
+    ComponentReport,
+    DisabilityReport,
+    Recommendation,
+    ReportSummary,
+)
+
 __all__ = [
     # Readability
     "ReadabilityAnalyzer",
@@ -171,4 +180,11 @@ __all__ = [
     "generate_error_alert",
     "generate_live_region",
     "generate_status_update",
+    # Report Generator
+    "AccessibilityReport",
+    "AccessibilityReportGenerator",
+    "ComponentReport",
+    "DisabilityReport",
+    "Recommendation",
+    "ReportSummary",
 ]
