@@ -6,9 +6,24 @@ move outside the supported capabilities of the system.
 
 Issue #78 - Task 5.1: Drift Analysis Types
 Issue #79 - Task 5.2: Semantic Analyzer
+Issue #80 - Task 5.3: Drift Classifier
 Part of #28 - Phase 5: Intent Drift Detection
 """
 
+from .drift_classifier import (
+    # Pattern definitions
+    ABSTRACTION_PATTERNS,
+    META_PATTERNS,
+    PII_PATTERNS,
+    TEMPORAL_FUTURE_PATTERNS,
+    TEMPORAL_PAST_PATTERNS,
+    # Classes
+    DriftClassification,
+    DriftClassifier,
+    DriftClassifierConfig,
+    DriftScoreRange,
+    PatternMatch,
+)
 from .semantic_analyzer import (
     # Thresholds
     DOMAIN_SHIFT_THRESHOLD,
@@ -60,6 +75,17 @@ from .types import (
 )
 
 __all__ = [
+    # Drift Classifier
+    "ABSTRACTION_PATTERNS",
+    "META_PATTERNS",
+    "PII_PATTERNS",
+    "TEMPORAL_FUTURE_PATTERNS",
+    "TEMPORAL_PAST_PATTERNS",
+    "DriftClassification",
+    "DriftClassifier",
+    "DriftClassifierConfig",
+    "DriftScoreRange",
+    "PatternMatch",
     # Semantic Analyzer
     "DOMAIN_SHIFT_THRESHOLD",
     "IN_SCOPE_THRESHOLD",
