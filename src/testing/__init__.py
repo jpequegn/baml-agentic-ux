@@ -4,6 +4,7 @@ This module provides tools for defining and executing conversation tests.
 
 Issue #89 - Task 6.1: Test Definition Types
 Issue #90 - Task 6.2: Test Loader & Validator
+Issue #91 - Task 6.3: Conversation Test Runner
 Issue #92 - Task 6.4: Quality Scorer
 Part of #29 - Phase 6: Conversational Testing Framework
 """
@@ -30,6 +31,17 @@ from .quality_scorer import (
     QualityScorerConfig,
     # Main Scorer
     QualityScorer,
+)
+from .runner import (
+    # Response Handler Types
+    MockResponseHandler,
+    ResponseHandler,
+    ResponseResult,
+    # Configuration
+    RunnerConfig,
+    # Main Runner
+    AssertionEvaluator,
+    ConversationTestRunner,
 )
 from .types import (
     # Core Enums
@@ -94,6 +106,13 @@ __all__ = [
     "QualityDimension",
     "QualityScorerConfig",
     "QualityScorer",
+    # Runner Types
+    "MockResponseHandler",
+    "ResponseHandler",
+    "ResponseResult",
+    "RunnerConfig",
+    "AssertionEvaluator",
+    "ConversationTestRunner",
     # Core Enums
     "AssertionOperator",
     "AssertionSeverity",
