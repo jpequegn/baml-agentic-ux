@@ -8,6 +8,7 @@ Issue #78 - Task 5.1: Drift Analysis Types
 Issue #79 - Task 5.2: Semantic Analyzer
 Issue #80 - Task 5.3: Drift Classifier
 Issue #81 - Task 5.4: Confidence Assessor
+Issue #82 - Task 5.5: Graceful Response Generator
 Part of #28 - Phase 5: Intent Drift Detection
 """
 
@@ -37,6 +38,22 @@ from .drift_classifier import (
     DriftClassifierConfig,
     DriftScoreRange,
     PatternMatch,
+)
+from .response_generator import (
+    # Templates
+    DRIFT_TEMPLATES,
+    TEMPLATE_ABSTRACTION_CLIMB,
+    TEMPLATE_AMBIGUOUS,
+    TEMPLATE_DOMAIN_SHIFT,
+    TEMPLATE_ESCALATION,
+    TEMPLATE_NONE,
+    TEMPLATE_PERSONALIZATION,
+    TEMPLATE_SCOPE_EXPANSION,
+    TEMPLATE_TEMPORAL_DRIFT,
+    # Configuration
+    ResponseGeneratorConfig,
+    # Main Class
+    GracefulResponseGenerator,
 )
 from .semantic_analyzer import (
     # Thresholds
@@ -97,6 +114,18 @@ __all__ = [
     "ConfidenceAssessorConfig",
     "IntentResult",
     "ConfidenceAssessor",
+    # Response Generator
+    "DRIFT_TEMPLATES",
+    "TEMPLATE_ABSTRACTION_CLIMB",
+    "TEMPLATE_AMBIGUOUS",
+    "TEMPLATE_DOMAIN_SHIFT",
+    "TEMPLATE_ESCALATION",
+    "TEMPLATE_NONE",
+    "TEMPLATE_PERSONALIZATION",
+    "TEMPLATE_SCOPE_EXPANSION",
+    "TEMPLATE_TEMPORAL_DRIFT",
+    "ResponseGeneratorConfig",
+    "GracefulResponseGenerator",
     # Drift Classifier
     "ABSTRACTION_PATTERNS",
     "META_PATTERNS",
