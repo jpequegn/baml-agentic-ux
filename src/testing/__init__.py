@@ -8,6 +8,7 @@ Issue #91 - Task 6.3: Conversation Test Runner
 Issue #92 - Task 6.4: Quality Scorer
 Issue #93 - Task 6.5: Coverage Analyzer
 Issue #94 - Task 6.6: Adversarial Test Generator
+Issue #95 - Task 6.7: Report Generator
 Part of #29 - Phase 6: Conversational Testing Framework
 """
 
@@ -77,6 +78,19 @@ from .adversarial import (
     AdversarialTestResult,
     # Main Generator
     AdversarialTestGenerator,
+)
+from .report_generator import (
+    # Enums
+    ReportFormat,
+    # Configuration Types
+    ReportConfig,
+    # Data Types
+    ReportMetadata,
+    TestReport,
+    TrendAnalysis,
+    TrendDataPoint,
+    # Main Generator
+    ReportGenerator,
 )
 from .types import (
     # Core Enums
@@ -172,6 +186,14 @@ __all__ = [
     "PerturbationConfig",
     "AdversarialTestResult",
     "AdversarialTestGenerator",
+    # Report Generator Types
+    "ReportFormat",
+    "ReportConfig",
+    "ReportMetadata",
+    "TestReport",
+    "TrendAnalysis",
+    "TrendDataPoint",
+    "ReportGenerator",
     # Core Enums
     "AssertionOperator",
     "AssertionSeverity",
