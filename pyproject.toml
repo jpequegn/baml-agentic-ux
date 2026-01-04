@@ -22,6 +22,7 @@ dev = [
 
 [project.scripts]
 lui-sim = "lui_simulator.cli:main"
+convtest = "src.testing.cli:main"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
