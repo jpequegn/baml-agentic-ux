@@ -11,7 +11,9 @@ Dependencies: All previous tasks (5.1-5.7)
 from __future__ import annotations
 
 import time
+import uuid
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional, Protocol
 
@@ -27,6 +29,7 @@ from .types import (
     ConfidenceTier,
     ConversationDriftContext,
     DriftAnalysis,
+    DriftConversationTurn,
     DriftDetectionConfig,
     DriftDetectionResult,
     DriftType,
@@ -370,10 +373,12 @@ class IntentPipelineWithDrift:
         self._available_components = available_components or []
         intent_definitions = [c.to_intent_definition() for c in self._available_components]
 
+        # Store supported domains for semantic analysis
+        self._supported_domains = supported_domains or []
+
         # Initialize sub-components
         self.semantic_analyzer = SemanticAnalyzer(
             config=semantic_config,
-            domain_keywords=supported_domains or [],
         )
 
         self.drift_classifier = DriftClassifier(
@@ -399,6 +404,7 @@ class IntentPipelineWithDrift:
         )
 
         self._core_capabilities = set(core_capabilities or [])
+        self._turn_counter = 0
 
     def set_available_components(self, components: list[AvailableComponent]) -> None:
         """Set the available components.
@@ -509,11 +515,17 @@ class IntentPipelineWithDrift:
 
         # Step 8: Update Coherence Tracker (if enabled)
         if self.config.enable_coherence_tracking:
-            self.coherence_tracker.add_turn(
+            self._turn_counter += 1
+            turn = DriftConversationTurn(
+                turn_id=str(uuid.uuid4()),
+                turn_number=self._turn_counter,
                 user_input=user_input,
+                timestamp=datetime.now(timezone.utc).isoformat(),
                 detected_intent=intent_extraction.intent_name,
-                drift_score=drift_analysis.drift_score,
+                drift_analysis=drift_analysis,
+                response=response,
             )
+            self.coherence_tracker.add_turn(turn)
 
         processing_time_ms = int((time.time() - start_time) * 1000)
 
@@ -558,7 +570,7 @@ class IntentPipelineWithDrift:
         return self.semantic_analyzer.analyze(
             user_input=user_input,
             available_intents=intent_dicts,
-            domain_keywords=self.drift_config.supported_domains,
+            domain_keywords=self._supported_domains,
         )
 
     def _get_or_extract_intent(
@@ -640,7 +652,7 @@ class IntentPipelineWithDrift:
         # Classify drift using the classifier
         classification = self.drift_classifier.classify(
             user_input=user_input,
-            semantic_analysis=semantic_result,
+            semantic_result=semantic_result,
         )
 
         # Calculate semantic distance from nearest intent
@@ -940,18 +952,19 @@ class IntentPipelineWithDrift:
         Returns:
             Dictionary with coherence metrics
         """
-        metrics = self.coherence_tracker.get_metrics()
+        metrics = self.coherence_tracker.get_coherence_metrics()
         return {
-            "average_coherence": metrics.average_coherence,
-            "turn_count": metrics.turn_count,
-            "drift_rate": metrics.drift_rate,
-            "trend": metrics.trend.value if metrics.trend else None,
-            "recovery_rate": metrics.recovery_rate,
+            "average_coherence": metrics.overall_coherence,
+            "turn_count": self._turn_counter,
+            "drift_rate": metrics.average_drift,
+            "trend": metrics.coherence_trend.value if metrics.coherence_trend else None,
+            "recovery_rate": 1.0 - metrics.average_drift if metrics.average_drift < 1.0 else 0.0,
         }
 
     def reset_coherence_tracker(self) -> None:
         """Reset the coherence tracker for a new conversation."""
         self.coherence_tracker.reset()
+        self._turn_counter = 0
 
     def should_reset_context(self) -> tuple[bool, Optional[str]]:
         """Check if context should be reset based on coherence.
@@ -960,6 +973,6 @@ class IntentPipelineWithDrift:
             Tuple of (should_reset, reason)
         """
         trigger = self.coherence_tracker.should_reset_context()
-        if trigger:
-            return True, trigger.reason.value
+        if trigger.triggered:
+            return True, trigger.reason.value if trigger.reason else "unknown"
         return False, None
