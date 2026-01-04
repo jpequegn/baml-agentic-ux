@@ -11,6 +11,8 @@ Issue #81 - Task 5.4: Confidence Assessor
 Issue #82 - Task 5.5: Graceful Response Generator
 Issue #83 - Task 5.6: Conversation Coherence Tracker
 Issue #84 - Task 5.7: Redirect Suggestion Engine
+Issue #85 - Task 5.8: Intent Pipeline Integration
+Issue #86 - Task 5.9: Response Template Library
 Part of #28 - Phase 5: Intent Drift Detection
 """
 
@@ -93,6 +95,26 @@ from .redirect_engine import (
     REDIRECT_REASON_TEMPLATES,
     # Main Class
     RedirectSuggestionEngine,
+)
+from .templates import (
+    # Enums
+    TemplateCategory,
+    # Configuration
+    TemplateConfig,
+    # Core Classes
+    ResponseTemplate,
+    TemplateLibrary,
+    # Template Collections
+    ALL_TEMPLATES,
+    CAPABILITY_TEMPLATES,
+    CLARIFICATION_TEMPLATES,
+    ESCALATION_TEMPLATES,
+    IN_SCOPE_TEMPLATES,
+    REDIRECT_TEMPLATES as LIBRARY_REDIRECT_TEMPLATES,
+    UNCERTAINTY_TEMPLATES,
+    # Factory Functions
+    get_default_library,
+    reset_default_library,
 )
 from .types import (
     # Core Enums
@@ -189,6 +211,20 @@ __all__ = [
     "REDIRECT_PHRASE_TEMPLATES",
     "REDIRECT_REASON_TEMPLATES",
     "RedirectSuggestionEngine",
+    # Template Library
+    "TemplateCategory",
+    "TemplateConfig",
+    "ResponseTemplate",
+    "TemplateLibrary",
+    "ALL_TEMPLATES",
+    "CAPABILITY_TEMPLATES",
+    "CLARIFICATION_TEMPLATES",
+    "ESCALATION_TEMPLATES",
+    "IN_SCOPE_TEMPLATES",
+    "LIBRARY_REDIRECT_TEMPLATES",
+    "UNCERTAINTY_TEMPLATES",
+    "get_default_library",
+    "reset_default_library",
     # Core Enums
     "AbstractionLevel",
     "CoherenceTrend",
