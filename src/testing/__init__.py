@@ -92,6 +92,17 @@ from .report_generator import (
     # Main Generator
     ReportGenerator,
 )
+from .cli import (
+    # CLI Types
+    OutputFormat,
+    QualityGateConfig,
+    QualityGateResult,
+    # CLI Functions
+    evaluate_quality_gates,
+    # Main CLI App
+    app as cli_app,
+    main as cli_main,
+)
 from .types import (
     # Core Enums
     AssertionOperator,
@@ -194,6 +205,13 @@ __all__ = [
     "TrendAnalysis",
     "TrendDataPoint",
     "ReportGenerator",
+    # CLI Types
+    "OutputFormat",
+    "QualityGateConfig",
+    "QualityGateResult",
+    "evaluate_quality_gates",
+    "cli_app",
+    "cli_main",
     # Core Enums
     "AssertionOperator",
     "AssertionSeverity",
