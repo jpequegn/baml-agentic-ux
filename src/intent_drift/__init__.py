@@ -168,6 +168,24 @@ from .types import (
     DriftAggregateStats,
     DriftAnalysisRequest,
 )
+from .analytics import (
+    # Enums
+    DriftSeverity,
+    RecoveryMethod,
+    # Data Classes
+    DriftAnalyticsEvent,
+    DriftMetrics,
+    DriftPattern,
+    DriftSummary,
+    TimeRange,
+    # Storage
+    DriftEventStore,
+    InMemoryDriftEventStore,
+    # Main Class
+    DriftAnalytics,
+    # Factory
+    create_drift_analytics,
+)
 
 __all__ = [
     # Coherence Tracker
@@ -284,4 +302,16 @@ __all__ = [
     "BatchDriftAnalysis",
     "DriftAggregateStats",
     "DriftAnalysisRequest",
+    # Analytics
+    "DriftSeverity",
+    "RecoveryMethod",
+    "DriftAnalyticsEvent",
+    "DriftMetrics",
+    "DriftPattern",
+    "DriftSummary",
+    "TimeRange",
+    "DriftEventStore",
+    "InMemoryDriftEventStore",
+    "DriftAnalytics",
+    "create_drift_analytics",
 ]
