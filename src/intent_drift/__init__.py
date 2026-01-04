@@ -9,9 +9,22 @@ Issue #79 - Task 5.2: Semantic Analyzer
 Issue #80 - Task 5.3: Drift Classifier
 Issue #81 - Task 5.4: Confidence Assessor
 Issue #82 - Task 5.5: Graceful Response Generator
+Issue #83 - Task 5.6: Conversation Coherence Tracker
 Part of #28 - Phase 5: Intent Drift Detection
 """
 
+from .coherence_tracker import (
+    # Enums
+    ContextResetReason,
+    DriftTrend,
+    # Data Classes
+    CoherenceMetrics,
+    CoherenceTrackerConfig,
+    ContextResetTrigger,
+    TurnCoherence,
+    # Main Class
+    ConversationCoherenceTracker,
+)
 from .confidence_assessor import (
     # Thresholds
     ConfidenceThresholds,
@@ -106,6 +119,14 @@ from .types import (
 )
 
 __all__ = [
+    # Coherence Tracker
+    "ContextResetReason",
+    "DriftTrend",
+    "CoherenceMetrics",
+    "CoherenceTrackerConfig",
+    "ContextResetTrigger",
+    "TurnCoherence",
+    "ConversationCoherenceTracker",
     # Confidence Assessor
     "ConfidenceThresholds",
     "AssessmentAction",
