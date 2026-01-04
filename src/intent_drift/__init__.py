@@ -96,6 +96,20 @@ from .redirect_engine import (
     # Main Class
     RedirectSuggestionEngine,
 )
+from .intent_pipeline import (
+    # Enums
+    PipelineAction,
+    # Data Classes
+    AvailableComponent,
+    IntentExtractionWithDrift,
+    PipelineConversationContext,
+    PipelineDriftConfig,
+    SimpleIntentExtraction,
+    # Protocol
+    IntentExtractionResult,
+    # Main Class
+    IntentPipelineWithDrift,
+)
 from .templates import (
     # Enums
     TemplateCategory,
@@ -211,6 +225,15 @@ __all__ = [
     "REDIRECT_PHRASE_TEMPLATES",
     "REDIRECT_REASON_TEMPLATES",
     "RedirectSuggestionEngine",
+    # Intent Pipeline
+    "PipelineAction",
+    "AvailableComponent",
+    "IntentExtractionResult",
+    "IntentExtractionWithDrift",
+    "IntentPipelineWithDrift",
+    "PipelineConversationContext",
+    "PipelineDriftConfig",
+    "SimpleIntentExtraction",
     # Template Library
     "TemplateCategory",
     "TemplateConfig",
