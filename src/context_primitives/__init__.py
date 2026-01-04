@@ -56,6 +56,28 @@ from src.context_primitives.provider import (
 )
 from src.context_primitives.stores.memory import InMemoryContextProvider
 from src.context_primitives.stores.factory import create_provider, create_memory_provider
+from src.context_primitives.history_manager import (
+    # Token counting
+    TokenCounter,
+    TiktokenCounter,
+    SimpleTokenCounter,
+    # Truncation
+    TruncationStrategy,
+    TruncationConfig,
+    TruncationResult,
+    # Importance scoring
+    TurnImportance,
+    ImportanceWeights,
+    ImportanceScorer,
+    # Summarization
+    ConversationSummary,
+    Summarizer,
+    SimpleSummarizer,
+    LLMSummarizer,
+    # History manager
+    HistoryManager,
+    create_history_manager,
+)
 
 __all__ = [
     # Enums
@@ -77,4 +99,24 @@ __all__ = [
     # Factory functions
     "create_provider",
     "create_memory_provider",
+    # History Manager - Token counting
+    "TokenCounter",
+    "TiktokenCounter",
+    "SimpleTokenCounter",
+    # History Manager - Truncation
+    "TruncationStrategy",
+    "TruncationConfig",
+    "TruncationResult",
+    # History Manager - Importance scoring
+    "TurnImportance",
+    "ImportanceWeights",
+    "ImportanceScorer",
+    # History Manager - Summarization
+    "ConversationSummary",
+    "Summarizer",
+    "SimpleSummarizer",
+    "LLMSummarizer",
+    # History Manager - Main class
+    "HistoryManager",
+    "create_history_manager",
 ]

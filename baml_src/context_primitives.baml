@@ -302,3 +302,111 @@ class CleanupResult {
   duration_ms int @description("Time taken for cleanup")
   errors string[]? @description("Any errors encountered")
 }
+
+// ============================================
+// Summarization Functions
+// ============================================
+
+/// Summarize conversation turns into a concise context summary
+/// Used by HistoryManager for context window management
+function SummarizeConversation(
+  turns: ContextConversationTurn[],
+  existing_summary: string?,
+  max_length: int?
+) -> ConversationSummary {
+  client GPT4
+  prompt #"
+    You are a conversation summarization expert. Your task is to create a concise,
+    informative summary that preserves the essential context for future conversation turns.
+
+    {{ ctx.output_format }}
+
+    {% if existing_summary %}
+    PREVIOUS SUMMARY:
+    {{ existing_summary }}
+
+    The following turns occurred after the previous summary. Create an UPDATED summary
+    that incorporates both the previous context and the new information.
+    {% endif %}
+
+    CONVERSATION TURNS TO SUMMARIZE:
+    {% for turn in turns %}
+    ---
+    Turn {{ turn.turn_id }} ({{ turn.timestamp }}):
+    User: {{ turn.user_input }}
+    {% if turn.detected_intent %}Intent: {{ turn.detected_intent }}{% endif %}
+    {% if turn.extracted_entities %}Entities: {{ turn.extracted_entities }}{% endif %}
+    Assistant: {{ turn.assistant_response }}
+    ---
+    {% endfor %}
+
+    {% if max_length %}
+    CONSTRAINT: Keep the summary under {{ max_length }} characters.
+    {% endif %}
+
+    INSTRUCTIONS:
+    1. Create a concise summary capturing the key information and context
+    2. Identify the main topics/intents discussed
+    3. Extract important entities mentioned (names, dates, IDs, etc.)
+    4. Note the current conversation state/topic
+    5. Preserve information needed for continuity
+
+    Focus on WHAT was discussed and WHAT was decided/accomplished, not the mechanics
+    of the conversation. The summary should enable an AI to continue the conversation
+    naturally without access to the full history.
+  "#
+}
+
+/// Score conversation turns by importance for context retention
+/// Used by HistoryManager for importance-based truncation
+function ScoreTurnImportance(
+  turns: ContextConversationTurn[],
+  current_context: string?,
+  important_entities: string[]?
+) -> TurnImportance[] {
+  client GPT4
+  prompt #"
+    You are evaluating conversation turns for importance to determine which should
+    be retained in a limited context window.
+
+    {{ ctx.output_format }}
+
+    {% if current_context %}
+    CURRENT CONVERSATION CONTEXT:
+    {{ current_context }}
+    {% endif %}
+
+    {% if important_entities %}
+    IMPORTANT ENTITIES TO TRACK:
+    {{ important_entities }}
+    {% endif %}
+
+    TURNS TO EVALUATE:
+    {% for turn in turns %}
+    ---
+    Turn {{ turn.turn_id }}:
+    User: {{ turn.user_input }}
+    {% if turn.detected_intent %}Intent: {{ turn.detected_intent }} (confidence: {{ turn.confidence }}){% endif %}
+    {% if turn.extracted_entities %}Entities: {{ turn.extracted_entities }}{% endif %}
+    Assistant: {{ turn.assistant_response }}
+    ---
+    {% endfor %}
+
+    SCORING CRITERIA:
+    1. Recency: How recently did this turn occur? (0-1, higher = more recent)
+    2. Relevance: How relevant is this turn to the current context? (0-1)
+    3. Entity Score: Does this turn contain important entities? (0-1)
+    4. Overall Score: Weighted combination (recency 30%, relevance 40%, entities 30%)
+
+    For each turn, determine:
+    - Individual factor scores
+    - Overall importance score (0-1)
+    - Whether to retain (true if overall >= 0.3)
+
+    Prioritize turns that:
+    - Establish key context or decisions
+    - Contain important entity references
+    - Are directly relevant to current topic
+    - Would be needed to understand later turns
+  "#
+}
