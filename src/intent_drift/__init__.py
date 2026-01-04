@@ -10,6 +10,7 @@ Issue #80 - Task 5.3: Drift Classifier
 Issue #81 - Task 5.4: Confidence Assessor
 Issue #82 - Task 5.5: Graceful Response Generator
 Issue #83 - Task 5.6: Conversation Coherence Tracker
+Issue #84 - Task 5.7: Redirect Suggestion Engine
 Part of #28 - Phase 5: Intent Drift Detection
 """
 
@@ -78,6 +79,20 @@ from .semantic_analyzer import (
     SemanticAnalyzer,
     SemanticAnalyzerConfig,
     SimilarityResult,
+)
+from .redirect_engine import (
+    # Enums
+    RedirectStrategy,
+    # Configuration
+    RedirectEngineConfig,
+    # Data Classes
+    RedirectContext,
+    ScoredSuggestion,
+    # Templates
+    REDIRECT_PHRASE_TEMPLATES,
+    REDIRECT_REASON_TEMPLATES,
+    # Main Class
+    RedirectSuggestionEngine,
 )
 from .types import (
     # Core Enums
@@ -166,6 +181,14 @@ __all__ = [
     "SemanticAnalyzer",
     "SemanticAnalyzerConfig",
     "SimilarityResult",
+    # Redirect Engine
+    "RedirectStrategy",
+    "RedirectEngineConfig",
+    "RedirectContext",
+    "ScoredSuggestion",
+    "REDIRECT_PHRASE_TEMPLATES",
+    "REDIRECT_REASON_TEMPLATES",
+    "RedirectSuggestionEngine",
     # Core Enums
     "AbstractionLevel",
     "CoherenceTrend",
