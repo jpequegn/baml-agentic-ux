@@ -6,6 +6,7 @@ Issue #89 - Task 6.1: Test Definition Types
 Issue #90 - Task 6.2: Test Loader & Validator
 Issue #91 - Task 6.3: Conversation Test Runner
 Issue #92 - Task 6.4: Quality Scorer
+Issue #93 - Task 6.5: Coverage Analyzer
 Part of #29 - Phase 6: Conversational Testing Framework
 """
 
@@ -42,6 +43,27 @@ from .runner import (
     # Main Runner
     AssertionEvaluator,
     ConversationTestRunner,
+)
+from .coverage import (
+    # Schema Types
+    ConversationPath,
+    EdgeCase,
+    EntityDefinition,
+    IntentDefinition,
+    SchemaDefinition,
+    # Coverage Types
+    CoverageConfig,
+    CoverageGap,
+    CoverageLevel,
+    CoverageMetric,
+    CoverageReport,
+    EdgeCaseCoverage,
+    EntityCoverage,
+    IntentCoverage,
+    PathCoverage,
+    TestSuggestion,
+    # Main Analyzer
+    CoverageAnalyzer,
 )
 from .types import (
     # Core Enums
@@ -113,6 +135,23 @@ __all__ = [
     "RunnerConfig",
     "AssertionEvaluator",
     "ConversationTestRunner",
+    # Coverage Types
+    "ConversationPath",
+    "EdgeCase",
+    "EntityDefinition",
+    "IntentDefinition",
+    "SchemaDefinition",
+    "CoverageConfig",
+    "CoverageGap",
+    "CoverageLevel",
+    "CoverageMetric",
+    "CoverageReport",
+    "EdgeCaseCoverage",
+    "EntityCoverage",
+    "IntentCoverage",
+    "PathCoverage",
+    "TestSuggestion",
+    "CoverageAnalyzer",
     # Core Enums
     "AssertionOperator",
     "AssertionSeverity",
