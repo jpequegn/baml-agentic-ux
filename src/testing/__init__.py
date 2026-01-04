@@ -7,6 +7,7 @@ Issue #90 - Task 6.2: Test Loader & Validator
 Issue #91 - Task 6.3: Conversation Test Runner
 Issue #92 - Task 6.4: Quality Scorer
 Issue #93 - Task 6.5: Coverage Analyzer
+Issue #94 - Task 6.6: Adversarial Test Generator
 Part of #29 - Phase 6: Conversational Testing Framework
 """
 
@@ -64,6 +65,18 @@ from .coverage import (
     TestSuggestion,
     # Main Analyzer
     CoverageAnalyzer,
+)
+from .adversarial import (
+    # Enums
+    AdversarialSeverity,
+    PerturbationType,
+    # Configuration Types
+    GeneratorConfig,
+    PerturbationConfig,
+    # Result Types
+    AdversarialTestResult,
+    # Main Generator
+    AdversarialTestGenerator,
 )
 from .types import (
     # Core Enums
@@ -152,6 +165,13 @@ __all__ = [
     "PathCoverage",
     "TestSuggestion",
     "CoverageAnalyzer",
+    # Adversarial Types
+    "AdversarialSeverity",
+    "PerturbationType",
+    "GeneratorConfig",
+    "PerturbationConfig",
+    "AdversarialTestResult",
+    "AdversarialTestGenerator",
     # Core Enums
     "AssertionOperator",
     "AssertionSeverity",
