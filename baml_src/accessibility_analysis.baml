@@ -73,8 +73,8 @@ class ResponseAccessibilityAnalysis {
 
 /// Analyze a response for accessibility compliance
 function AnalyzeResponseAccessibility(
-  response string,
-  config AccessibilityAnalysisConfig
+  response: string,
+  config: AccessibilityAnalysisConfig
 ) -> ResponseAccessibilityAnalysis {
   client CustomSonnet4
   prompt #"
@@ -133,8 +133,8 @@ function AnalyzeResponseAccessibility(
 
 /// Suggest improvements to make a response more accessible
 function SuggestAccessibilityImprovements(
-  response string,
-  target_level ComplianceLevel
+  response: string,
+  target_level: ComplianceLevel
 ) -> AccessibilityImprovementSuggestions {
   client CustomSonnet4
   prompt #"
@@ -181,9 +181,9 @@ class TextImprovement {
 
 /// Rewrite a response to meet accessibility requirements
 function RewriteForAccessibility(
-  response string,
-  target_level ComplianceLevel,
-  preserve_meaning bool
+  response: string,
+  target_level: ComplianceLevel,
+  preserve_meaning: bool
 ) -> AccessibleRewrite {
   client CustomSonnet4
   prompt #"
@@ -197,7 +197,7 @@ function RewriteForAccessibility(
     - Reading grade ≤ 12
     - Sentence length ≤ 35 words
     - Define technical terms
-    {% elsif target_level == "LEVEL_AA" %}
+    {% elif target_level == "LEVEL_AA" %}
     - Reading grade ≤ 8
     - Sentence length ≤ 25 words
     - Use common vocabulary
@@ -286,8 +286,8 @@ class LUIAccessibilityEvaluation {
 
 /// Evaluate a complete LUI schema for accessibility compliance
 function EvaluateLUIAccessibility(
-  schema InterfaceSchema,
-  target_level ComplianceLevel
+  schema: InterfaceSchema,
+  target_level: ComplianceLevel
 ) -> LUIAccessibilityEvaluation {
   client CustomSonnet4
   prompt #"
@@ -391,8 +391,8 @@ class SimplificationResult {
 
 /// Detect jargon in text and suggest alternatives
 function DetectJargon(
-  text string,
-  include_definitions bool
+  text: string,
+  include_definitions: bool
 ) -> JargonDetectionResult {
   client CustomSonnet4
   prompt #"
@@ -430,9 +430,9 @@ function DetectJargon(
 
 /// Simplify text by replacing jargon with plain language
 function SimplifyResponse(
-  text string,
-  preserve_technical_accuracy bool,
-  target_reading_level int
+  text: string,
+  preserve_technical_accuracy: bool,
+  target_reading_level: int
 ) -> SimplificationResult {
   client CustomSonnet4
   prompt #"

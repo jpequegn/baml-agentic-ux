@@ -115,7 +115,7 @@ class SchemaTransformPlan {
   reversible bool @description("Whether transformation can be reversed")
   reverse_plan_id string? @description("ID of reverse transformation plan if reversible")
   estimated_complexity TransformComplexity @description("Estimated transformation complexity")
-  validation_result PlanValidation @description("Validation status of the plan")
+  validation_result SchemaPlanValidation @description("Validation status of the plan")
   metadata PlanMetadata? @description("Additional metadata")
 }
 
@@ -148,15 +148,15 @@ enum TransformComplexity {
 }
 
 /// Validation result for a transform plan
-class PlanValidation {
+class SchemaPlanValidation {
   is_valid bool @description("Whether plan is valid")
-  errors ValidationIssue[] @description("Validation errors")
-  warnings ValidationIssue[] @description("Validation warnings")
+  errors SchemaValidationIssue[] @description("Validation errors")
+  warnings SchemaValidationIssue[] @description("Validation warnings")
   coverage_analysis CoverageAnalysis @description("Field coverage analysis")
 }
 
 /// A validation issue (error or warning)
-class ValidationIssue {
+class SchemaValidationIssue {
   issue_id string @description("Issue identifier")
   severity string @description("error or warning")
   message string @description("Issue description")
@@ -305,9 +305,9 @@ class ExecuteTransformResponse {
 
 /// Generate a transformation plan between two schemas
 function GenerateTransformPlan(
-  source_schema string,
-  target_schema string,
-  preferences string?
+  source_schema: string,
+  target_schema: string,
+  preferences: string?
 ) -> SchemaTransformPlan {
   client CustomSonnet4
   prompt #"
@@ -337,9 +337,9 @@ function GenerateTransformPlan(
 
 /// Apply a transformation plan to actual data
 function ApplyTransformation(
-  input_data string,
-  plan string,
-  options string?
+  input_data: string,
+  plan: string,
+  options: string?
 ) -> TransformResult {
   client CustomSonnet4
   prompt #"
@@ -368,10 +368,10 @@ function ApplyTransformation(
 
 /// Suggest improvements to a transformation plan
 function SuggestPlanImprovements(
-  plan string,
-  sample_data string?,
-  issues string[]
-) -> PlanImprovement[] {
+  plan: string,
+  sample_data: string?,
+  issues: string[]
+) -> SchemaPlanImprovement[] {
   client CustomSonnet4
   prompt #"
     Analyze this transformation plan and suggest improvements.
@@ -398,7 +398,7 @@ function SuggestPlanImprovements(
 }
 
 /// Suggestion for improving a transform plan
-class PlanImprovement {
+class SchemaPlanImprovement {
   improvement_id string @description("Unique improvement identifier")
   target_transformation_id string? @description("ID of transformation to improve")
   improvement_type string @description("Type of improvement")

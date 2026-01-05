@@ -91,8 +91,8 @@ class CombinedDisabilityEvaluation {
 
 /// Evaluate a schema for a specific disability type
 function EvaluateForDisability(
-  schema InterfaceSchema,
-  disability_type DisabilityType
+  schema: InterfaceSchema,
+  disability_type: DisabilityType
 ) -> DisabilityEvaluation {
   client CustomSonnet4
   prompt #"
@@ -110,14 +110,14 @@ function EvaluateForDisability(
     - No visual-only information: Is all visual content described?
     - High contrast: Is high contrast mode supported?
     - Key metric: 100% audio confirmation for all actions
-    {% elsif disability_type == "HEARING" %}
+    {% elif disability_type == "HEARING" %}
     HEARING IMPAIRMENT CRITERIA:
     - Text alternatives: Is text available for all audio content?
     - Visual alerts: Are there visual alternatives to audio alerts?
     - Captions: Is real-time captioning supported?
     - Sign language: Is sign language interpretation available?
     - Key metric: 99% caption accuracy
-    {% elsif disability_type == "MOTOR" %}
+    {% elif disability_type == "MOTOR" %}
     MOTOR IMPAIRMENT CRITERIA:
     - Extended timeout: Is timeout ≥5× standard (≥100 seconds)?
     - Single-action: Can all actions be completed with single gestures?
@@ -125,13 +125,13 @@ function EvaluateForDisability(
     - Voice input: Is voice input supported as alternative?
     - Switch access: Is switch device access supported?
     - Key metric: ≥5× timeout duration
-    {% elsif disability_type == "SPEECH" %}
+    {% elif disability_type == "SPEECH" %}
     SPEECH IMPAIRMENT CRITERIA:
     - Text input: Is there 100% text fallback for voice?
     - AAC devices: Is AAC device input supported?
     - Gesture input: Are gesture alternatives available?
     - Key metric: 100% text fallback coverage
-    {% elsif disability_type == "COGNITIVE" %}
+    {% elif disability_type == "COGNITIVE" %}
     COGNITIVE IMPAIRMENT CRITERIA:
     - Reading level: Is content at Grade 6-8 level?
     - Consistent navigation: Are patterns predictable?
@@ -139,7 +139,7 @@ function EvaluateForDisability(
     - Undo support: Can actions be reversed?
     - Auto-save: Is work automatically saved?
     - Key metric: Grade 6-8 reading level
-    {% elsif disability_type == "NEUROLOGICAL" %}
+    {% elif disability_type == "NEUROLOGICAL" %}
     NEUROLOGICAL CRITERIA:
     - Seizure safety: Are there no flashes >3Hz?
     - Animation controls: Can animations be paused/stopped?
@@ -173,7 +173,7 @@ function EvaluateForDisability(
 
 /// Evaluate a schema for all disability types
 function EvaluateAllDisabilities(
-  schema InterfaceSchema
+  schema: InterfaceSchema
 ) -> CombinedDisabilityEvaluation {
   client CustomSonnet4
   prompt #"

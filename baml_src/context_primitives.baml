@@ -314,7 +314,7 @@ function SummarizeConversation(
   existing_summary: string?,
   max_length: int?
 ) -> ConversationSummary {
-  client GPT4
+  client CustomSonnet4
   prompt #"
     You are a conversation summarization expert. Your task is to create a concise,
     informative summary that preserves the essential context for future conversation turns.
@@ -364,7 +364,7 @@ function ScoreTurnImportance(
   current_context: string?,
   important_entities: string[]?
 ) -> TurnImportance[] {
-  client GPT4
+  client CustomSonnet4
   prompt #"
     You are evaluating conversation turns for importance to determine which should
     be retained in a limited context window.

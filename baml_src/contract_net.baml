@@ -353,13 +353,13 @@ class TaskProgressReport {
   reported_at string @description("ISO 8601 timestamp")
   progress_percentage float @description("Completion percentage (0.0-100.0)")
   current_step int @description("Current step number")
-  status ExecutionStatus @description("Current execution status")
+  status ContractExecutionStatus @description("Current execution status")
   issues ExecutionIssue[]? @description("Any issues encountered")
   estimated_remaining_ms int? @description("Estimated time remaining")
 }
 
 /// Status of task execution
-enum ExecutionStatus {
+enum ContractExecutionStatus {
   NOT_STARTED @description("Execution has not begun")
   IN_PROGRESS @description("Execution is ongoing")
   PAUSED @description("Execution is paused")
@@ -371,14 +371,14 @@ enum ExecutionStatus {
 /// Issue encountered during execution
 class ExecutionIssue {
   issue_id string @description("Unique identifier for this issue")
-  severity IssueSeverity @description("Severity of the issue")
+  severity ContractIssueSeverity @description("Severity of the issue")
   description string @description("Description of the issue")
   impact string @description("Impact on task completion")
   resolution string? @description("Resolution if resolved")
 }
 
 /// Severity of an execution issue
-enum IssueSeverity {
+enum ContractIssueSeverity {
   INFO @description("Informational, no impact")
   WARNING @description("Minor issue, task can continue")
   ERROR @description("Significant issue, may impact completion")
@@ -390,16 +390,16 @@ class TaskExecutionResult {
   result_id string @description("Unique identifier for this result")
   contract_id string @description("ID of the contract")
   completed_at string @description("ISO 8601 completion timestamp")
-  status ExecutionStatus @description("Final status")
+  status ContractExecutionStatus @description("Final status")
   output string? @description("Task output as JSON string")
   actual_cost CostEstimate? @description("Actual cost incurred")
   actual_latency_ms int @description("Actual execution time")
-  quality_metrics QualityMetrics? @description("Quality measurements")
+  quality_metrics ContractQualityMetrics? @description("Quality measurements")
   summary string @description("Human-readable summary of results")
 }
 
 /// Quality metrics for task execution
-class QualityMetrics {
+class ContractQualityMetrics {
   accuracy float? @description("Accuracy score (0.0-1.0)")
   completeness float? @description("Completeness score (0.0-1.0)")
   consistency float? @description("Consistency score (0.0-1.0)")
@@ -445,11 +445,11 @@ enum ContractNetStatus {
 
 /// Issue a Call for Proposals
 function IssueCallForProposals(
-  issuer AgentIdentity,
-  task TaskSpecification,
-  target_agents string[]?,
-  deadline_seconds int,
-  selection_criteria SelectionCriteria[]
+  issuer: AgentIdentity,
+  task: TaskSpecification,
+  target_agents: string[]?,
+  deadline_seconds: int,
+  selection_criteria: SelectionCriteria[]
 ) -> CallForProposals {
   client CustomSonnet4
   prompt #"
@@ -473,9 +473,9 @@ function IssueCallForProposals(
 
 /// Evaluate all bids for a CFP
 function EvaluateBids(
-  cfp CallForProposals,
-  proposals ContractProposal[],
-  refusals BidRefusal[]?
+  cfp: CallForProposals,
+  proposals: ContractProposal[],
+  refusals: BidRefusal[]?
 ) -> BidEvaluation {
   client CustomSonnet4
   prompt #"
@@ -502,10 +502,10 @@ function EvaluateBids(
 
 /// Generate a contract proposal for a CFP
 function GenerateContractProposal(
-  cfp CallForProposals,
-  proposer AgentIdentity,
-  available_capabilities AgentCapability[],
-  cost_constraints CostEstimate?
+  cfp: CallForProposals,
+  proposer: AgentIdentity,
+  available_capabilities: AgentCapability[],
+  cost_constraints: CostEstimate?
 ) -> ContractProposal {
   client CustomSonnet4
   prompt #"
@@ -529,11 +529,11 @@ function GenerateContractProposal(
 
 /// Decide whether to submit a bid or refuse
 function DecideToBid(
-  cfp CallForProposals,
-  agent_identity AgentIdentity,
-  available_capabilities AgentCapability[],
-  current_workload float,
-  policy_constraints string[]?
+  cfp: CallForProposals,
+  agent_identity: AgentIdentity,
+  available_capabilities: AgentCapability[],
+  current_workload: float,
+  policy_constraints: string[]?
 ) -> BidDecision {
   client CustomSonnet4
   prompt #"

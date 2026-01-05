@@ -94,7 +94,7 @@ class DegradedResponse {
 
 /// Transformation applied during degradation
 class DegradationTransformation {
-  transformation_type TransformationType @description("Type of transformation applied")
+  transformation_type ModalityTransformationType @description("Type of transformation applied")
   original_format string @description("Original content format")
   target_format string @description("Target content format")
   fidelity float @description("Information fidelity 0.0-1.0")
@@ -102,7 +102,7 @@ class DegradationTransformation {
 }
 
 /// Types of transformations during degradation
-enum TransformationType {
+enum ModalityTransformationType {
   VOICE_TO_TEXT @description("Voice content converted to text")
   VISUAL_TO_TEXT @description("Visual elements converted to text")
   TABLE_TO_LIST @description("Tables converted to bullet lists")
@@ -300,7 +300,7 @@ class FallbackSelection {
   rationale string @description("Why this was selected")
   confidence float @description("Confidence in selection 0.0-1.0")
   expected_fidelity float @description("Expected information fidelity")
-  transformations_needed TransformationType[] @description("Required transformations")
+  transformations_needed ModalityTransformationType[] @description("Required transformations")
   alternative Modality? @description("Second choice if first fails")
 }
 
@@ -374,7 +374,7 @@ class PreservePriority {
 /// Result of content transformation
 class TransformedContent {
   content MultiModalResponse @description("Transformed content")
-  transformations_applied TransformationType[] @description("What was done")
+  transformations_applied ModalityTransformationType[] @description("What was done")
   fidelity float @description("Information fidelity achieved 0.0-1.0")
   lost_elements string[]? @description("Elements that couldn't be preserved")
   notes string? @description("Notes about the transformation")

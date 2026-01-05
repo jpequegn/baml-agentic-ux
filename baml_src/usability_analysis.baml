@@ -74,7 +74,7 @@ class UsabilityRecommendation {
   title string @description("Brief title of the recommendation")
   current_state string @description("Description of current behavior")
   suggested_change string @description("Proposed improvement")
-  implementation_effort EffortLevel @description("Estimated effort to implement")
+  implementation_effort UsabilityEffortLevel @description("Estimated effort to implement")
   expected_improvement string @description("Expected benefit from the change")
   related_issues string[] @description("Issue IDs this recommendation addresses")
 }
@@ -88,7 +88,7 @@ enum RecommendationPriority {
 }
 
 /// Effort level for implementing changes
-enum EffortLevel {
+enum UsabilityEffortLevel {
   TRIVIAL @description("Minutes to implement")
   LOW @description("Hours to implement")
   MEDIUM @description("Days to implement")

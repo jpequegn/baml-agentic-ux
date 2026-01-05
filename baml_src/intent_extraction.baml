@@ -105,10 +105,10 @@ enum ExecutionStrategy {
 class IntentDependency {
   dependent_intent_index int @description("Index of the dependent intent")
   depends_on_index int @description("Index of the intent it depends on")
-  dependency_type DependencyType
+  dependency_type IntentDependencyType
 }
 
-enum DependencyType {
+enum IntentDependencyType {
   REQUIRES_COMPLETION @description("Must complete before dependent can start")
   REQUIRES_SUCCESS @description("Must succeed for dependent to execute")
   SHARES_PARAMETER @description("Output of one is input to another")

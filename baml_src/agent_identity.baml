@@ -68,7 +68,7 @@ class AgentRegistration {
 /// An endpoint where an agent can be reached
 class AgentEndpoint {
   endpoint_id string @description("Unique identifier for this endpoint")
-  protocol EndpointProtocol @description("Communication protocol")
+  comm_protocol EndpointProtocol @description("Communication protocol")
   url string @description("Endpoint URL")
   priority int @description("Priority for endpoint selection (lower = preferred)")
   health_check_path string? @description("Path for health check requests")

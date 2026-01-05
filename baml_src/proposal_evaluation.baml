@@ -52,7 +52,7 @@ enum CapabilityLevel {
 class OfferedParameter {
   name string @description("Parameter name")
   value string @description("Offered value")
-  fixed bool @description("Whether this value is fixed or negotiable")
+  is_fixed bool @description("Whether this value is fixed or negotiable")
   alternatives string[]? @description("Alternative values if negotiable")
 }
 
@@ -308,12 +308,12 @@ class ProposalChange {
   field string @description("Field that was changed")
   original_value string @description("Original value")
   new_value string @description("New value")
-  change_type ChangeType @description("Type of change")
+  change_type ProposalChangeType @description("Type of change")
   justification string @description("Why this change was made")
 }
 
 /// Type of proposal change
-enum ChangeType {
+enum ProposalChangeType {
   CONCESSION @description("A concession we're making")
   REQUEST @description("A new request or increased demand")
   CLARIFICATION @description("Clarification of existing terms")
@@ -328,10 +328,10 @@ enum ChangeType {
 
 /// Evaluate a proposal against policy and capabilities
 function EvaluateProposalAgainstPolicy(
-  proposal NegotiationProposal,
-  session NegotiationSession,
-  evaluator_capabilities AgentCapability[],
-  evaluation_policy EvaluationPolicy
+  proposal: NegotiationProposal,
+  session: NegotiationSession,
+  evaluator_capabilities: AgentCapability[],
+  evaluation_policy: EvaluationPolicy
 ) -> ProposalEvaluationResult {
   client CustomSonnet4
   prompt #"
@@ -369,10 +369,10 @@ function EvaluateProposalAgainstPolicy(
 
 /// Generate an optimal counter-proposal
 function GenerateOptimalCounterProposal(
-  original_proposal NegotiationProposal,
-  gap_analysis GapAnalysis,
-  our_capabilities AgentCapability[],
-  config CounterProposalConfig
+  original_proposal: NegotiationProposal,
+  gap_analysis: GapAnalysis,
+  our_capabilities: AgentCapability[],
+  config: CounterProposalConfig
 ) -> CounterProposalResult {
   client CustomSonnet4
   prompt #"
@@ -406,9 +406,9 @@ function GenerateOptimalCounterProposal(
 
 /// Score a proposal quantitatively
 function ScoreProposal(
-  proposal NegotiationProposal,
-  our_requirements CapabilityRequest[],
-  scoring_weights ScoringWeights
+  proposal: NegotiationProposal,
+  our_requirements: CapabilityRequest[],
+  scoring_weights: ScoringWeights
 ) -> ProposalScore {
   client CustomSonnet4
   prompt #"

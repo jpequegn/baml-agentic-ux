@@ -39,7 +39,7 @@ class InputMethodConfig {
 // ============================================
 
 /// Configuration for user feedback mechanisms
-class FeedbackConfig {
+class TimingFeedbackConfig {
   immediate_confirmation bool @description("Immediate feedback for user actions")
   error_messages_clear bool @description("Error messages are clear and actionable")
   success_indicators bool @description("Visual/audio success indicators")
@@ -83,7 +83,7 @@ class InteractionAccessibilityConfig {
   component_id string @description("ID of the component")
   timing TimeoutConfig @description("Timeout configuration")
   input_methods InputMethodConfig @description("Supported input methods")
-  feedback FeedbackConfig @description("Feedback mechanisms")
+  feedback TimingFeedbackConfig @description("Feedback mechanisms")
   error_handling ErrorHandlingConfig @description("Error handling configuration")
   auto_update AutoUpdateConfig? @description("Auto-update configuration if applicable")
 }
@@ -168,8 +168,8 @@ class InteractionValidationResult {
 
 /// Validate timeout configuration for a compliance level
 function ValidateTimeoutConfig(
-  config TimeoutConfig,
-  target_level ComplianceLevel
+  config: TimeoutConfig,
+  target_level: ComplianceLevel
 ) -> TimingValidationResult {
   client CustomSonnet4
   prompt #"
@@ -209,8 +209,8 @@ function ValidateTimeoutConfig(
 
 /// Validate input methods for a compliance level
 function ValidateInputMethods(
-  config InputMethodConfig,
-  target_level ComplianceLevel
+  config: InputMethodConfig,
+  target_level: ComplianceLevel
 ) -> InputValidationResult {
   client CustomSonnet4
   prompt #"
@@ -241,8 +241,8 @@ function ValidateInputMethods(
 
 /// Validate complete interaction configuration
 function ValidateInteractionConfig(
-  config InteractionAccessibilityConfig,
-  target_level ComplianceLevel
+  config: InteractionAccessibilityConfig,
+  target_level: ComplianceLevel
 ) -> InteractionValidationResult {
   client CustomSonnet4
   prompt #"
