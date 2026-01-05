@@ -58,7 +58,7 @@ class TestTurn {
   expected_intent string? @description("Expected detected intent")
   expected_entities ExpectedEntity[] @description("Expected entity extractions")
   assertions ConversationAssertion[] @description("Assertions for this turn")
-  context_requirements ContextRequirement[] @description("Context that should be available")
+  context_requirements TestContextRequirement[] @description("Context that should be available")
   delay_ms int? @description("Optional delay before this turn")
   metadata map<string, string>? @description("Additional turn metadata")
 }
@@ -80,7 +80,7 @@ class ExpectedEntity {
 }
 
 /// Context requirement for a turn
-class ContextRequirement {
+class TestContextRequirement {
   key string @description("Context key that should exist")
   value_match string? @description("Expected value or pattern")
   match_type MatchType @description("Type of value matching")
@@ -227,14 +227,14 @@ class InitialEntity {
 /// Simulated user profile for testing
 class TestUserProfile {
   user_id string @description("Test user identifier")
-  expertise_level ExpertiseLevel @description("User's expertise level")
+  expertise_level TestExpertiseLevel @description("User's expertise level")
   preferences map<string, string>? @description("User preferences")
   history_summary string? @description("Summary of user history")
   accessibility_needs string[] @description("Accessibility requirements")
 }
 
 /// User expertise level
-enum ExpertiseLevel {
+enum TestExpertiseLevel {
   NOVICE @description("New user, needs guidance")
   INTERMEDIATE @description("Familiar with basics")
   ADVANCED @description("Experienced user")
@@ -317,13 +317,13 @@ class TurnResult {
   input string @description("The input text")
   actual_response string? @description("The actual response")
   detected_intent string? @description("The detected intent")
-  extracted_entities ExtractedEntity[] @description("Entities that were extracted")
+  extracted_entities TestExtractedEntity[] @description("Entities that were extracted")
   latency_ms int @description("Turn latency")
   passed bool @description("Whether turn assertions passed")
 }
 
 /// Entity that was extracted during test
-class ExtractedEntity {
+class TestExtractedEntity {
   entity_type string @description("Entity type")
   value string @description("Extracted value")
   confidence float @description("Extraction confidence")
@@ -376,14 +376,14 @@ class TestSuite {
   tests ConversationTest[] @description("Tests in this suite")
   default_setup TestSetup? @description("Default setup for all tests")
   default_thresholds QualityThresholds? @description("Default thresholds")
-  execution_order ExecutionOrder @description("How to order test execution")
+  execution_order TestExecutionOrder @description("How to order test execution")
   stop_on_failure bool @description("Whether to stop on first failure")
   parallel_execution bool @description("Whether tests can run in parallel")
   tags string[] @description("Suite tags")
 }
 
 /// Test execution order
-enum ExecutionOrder {
+enum TestExecutionOrder {
   SEQUENTIAL @description("Run in definition order")
   PRIORITY @description("Run by priority (critical first)")
   RANDOM @description("Random order for independence testing")

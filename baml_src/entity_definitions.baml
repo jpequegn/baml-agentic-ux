@@ -54,12 +54,12 @@ enum AttributeType {
 
 /// Constraints on attribute values
 class AttributeConstraint {
-  constraint_type ConstraintType
+  constraint_type EntityConstraintType
   value string
   error_message string
 }
 
-enum ConstraintType {
+enum EntityConstraintType {
   MIN_LENGTH
   MAX_LENGTH
   MIN_VALUE

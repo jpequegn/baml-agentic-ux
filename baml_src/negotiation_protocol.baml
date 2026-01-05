@@ -81,21 +81,21 @@ class SLARequirement {
 
 /// Additional constraint on a proposal
 class ProposalConstraint {
-  constraint_type ConstraintType @description("Type of constraint")
+  constraint_type NegotiationConstraintType @description("Type of constraint")
   field string @description("Field the constraint applies to")
-  operator ConstraintOperator @description("Comparison operator")
+  operator NegotiationConstraintOperator @description("Comparison operator")
   value string @description("Constraint value")
 }
 
 /// Types of constraints
-enum ConstraintType {
+enum NegotiationConstraintType {
   REQUIRED @description("Must be satisfied")
   PREFERRED @description("Preferred but not required")
   PROHIBITED @description("Must not be present")
 }
 
 /// Comparison operators for constraints
-enum ConstraintOperator {
+enum NegotiationConstraintOperator {
   EQUALS @description("Exact match")
   NOT_EQUALS @description("Must not match")
   GREATER_THAN @description("Greater than value")
@@ -168,14 +168,14 @@ enum NegotiationOutcome {
 /// Context for a negotiation session
 class NegotiationContext {
   purpose string @description("Purpose of the negotiation")
-  urgency UrgencyLevel @description("Urgency level of the request")
+  urgency NegotiationUrgencyLevel @description("Urgency level of the request")
   previous_session_id string? @description("ID of related previous session")
   tags string[]? @description("Tags for categorization")
   custom_data string? @description("Custom JSON data")
 }
 
 /// Urgency level for a negotiation
-enum UrgencyLevel {
+enum NegotiationUrgencyLevel {
   LOW @description("No time pressure")
   NORMAL @description("Standard priority")
   HIGH @description("Needs quick resolution")
@@ -220,10 +220,10 @@ class StateTransitionError {
 
 /// Evaluate a proposal and suggest a response
 function EvaluateProposal(
-  session NegotiationSession,
-  our_identity AgentIdentity,
-  our_capabilities string[],
-  our_constraints ProposalConstraint[]?
+  session: NegotiationSession,
+  our_identity: AgentIdentity,
+  our_capabilities: string[],
+  our_constraints: ProposalConstraint[]?
 ) -> ProposalEvaluation {
   client CustomSonnet4
   prompt #"
@@ -261,7 +261,7 @@ class RiskAssessment {
 }
 
 /// Risk level for negotiation
-enum RiskLevel {
+enum NegotiationRiskLevel {
   LOW @description("Minimal risk")
   MODERATE @description("Some concerns but manageable")
   HIGH @description("Significant concerns")
@@ -278,10 +278,10 @@ class RiskFactor {
 
 /// Generate an optimal counter-proposal
 function GenerateCounterProposal(
-  session NegotiationSession,
-  our_identity AgentIdentity,
-  our_capabilities string[],
-  negotiation_strategy NegotiationStrategy
+  session: NegotiationSession,
+  our_identity: AgentIdentity,
+  our_capabilities: string[],
+  negotiation_strategy: NegotiationStrategy
 ) -> NegotiationProposal {
   client CustomSonnet4
   prompt #"

@@ -348,9 +348,9 @@ class ValidationWarning {
 
 /// Plan a composition to achieve a goal
 function PlanComposition(
-  goal string,
-  available_agents string,
-  constraints string?
+  goal: string,
+  available_agents: string,
+  constraints: string?
 ) -> CompositionPlan {
   client CustomSonnet4
   prompt #"
@@ -387,8 +387,8 @@ function PlanComposition(
 
 /// Optimize an existing composition plan
 function OptimizePlan(
-  plan string,
-  optimization_goals string
+  plan: string,
+  optimization_goals: string
 ) -> CompositionPlan {
   client CustomSonnet4
   prompt #"
@@ -418,7 +418,7 @@ function OptimizePlan(
 
 /// Validate a composition plan
 function ValidatePlan(
-  plan string
+  plan: string
 ) -> PlanValidation {
   client CustomSonnet4
   prompt #"
@@ -441,7 +441,7 @@ function ValidatePlan(
 
 /// Analyze failure modes in a plan
 function AnalyzeFailureModes(
-  plan string
+  plan: string
 ) -> RiskAssessmentForComposition {
   client CustomSonnet4
   prompt #"

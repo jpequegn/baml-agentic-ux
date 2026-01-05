@@ -98,7 +98,7 @@ class AccessibilityProfile {
 // ============================================
 
 /// Severity of accessibility violations
-enum ViolationSeverity {
+enum ValidationViolationSeverity {
   CRITICAL @description("Prevents access for some users - must fix")
   SERIOUS @description("Significant barrier - should fix for compliance")
   MODERATE @description("Some users affected - recommended to fix")
@@ -119,11 +119,11 @@ enum ImpactedGroup {
 }
 
 /// An individual accessibility violation
-class AccessibilityViolation {
+class ValidationAccessibilityViolation {
   rule_id string @description("WCAG rule identifier (e.g., WCAG-1.1.1)")
   criterion WCAGCriterion @description("Specific WCAG success criterion")
   category WCAGCategory @description("WCAG category")
-  severity ViolationSeverity @description("Severity of the violation")
+  severity ValidationViolationSeverity @description("Severity of the violation")
   element string @description("Element or component with violation")
   element_type string? @description("Type of element (image, button, etc.)")
   description string @description("Description of the violation")
@@ -180,7 +180,7 @@ class AccessibilityReport {
   wcag_level WCAGLevel @description("Target conformance level")
   achieved_level WCAGLevel? @description("Actual achieved level")
   score float @description("Accessibility score 0-100")
-  violations AccessibilityViolation[] @description("List of violations found")
+  violations ValidationAccessibilityViolation[] @description("List of violations found")
   remediations RemediationAction[]? @description("Suggested fixes")
   summary ReportSummary @description("Summary of findings")
   category_scores CategoryScores @description("Scores by WCAG category")
@@ -217,7 +217,7 @@ class ElementValidation {
   element_id string @description("Element identifier")
   element_type string @description("Type of element")
   passed_checks string[] @description("Checks that passed")
-  failed_checks AccessibilityViolation[] @description("Checks that failed")
+  failed_checks ValidationAccessibilityViolation[] @description("Checks that failed")
   suggestions string[]? @description("Improvement suggestions")
 }
 
@@ -424,7 +424,7 @@ function ValidateAccessibilityDetailed(
 }
 
 /// Detailed accessibility report with element validation
-class DetailedAccessibilityReport {
+class ValidationDetailedAccessibilityReport {
   base_report AccessibilityReport @description("Base accessibility report")
   visual_validations VisualElementValidation[]? @description("Visual element validations")
   voice_validations VoiceElementValidation[]? @description("Voice element validations")
@@ -482,7 +482,7 @@ class UserAccessibilityCheck {
 
 /// Generate remediation plan for violations
 function GenerateRemediationPlan(
-  violations: AccessibilityViolation[],
+  violations: ValidationAccessibilityViolation[],
   priority_focus: WCAGCategory?
 ) -> RemediationPlan {
   client "anthropic/claude-sonnet-4-20250514"

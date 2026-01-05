@@ -21,7 +21,7 @@ enum CredentialType {
 }
 
 /// Level of trust established
-enum TrustLevel {
+enum SecurityTrustLevel {
   NONE @description("No trust established")
   LOW @description("Basic authentication only")
   MEDIUM @description("Authenticated with limited verification")
@@ -124,7 +124,7 @@ class CredentialMetadata {
 class CredentialValidation {
   credential_id string @description("ID of validated credential")
   status CredentialStatus @description("Validation status")
-  trust_level TrustLevel @description("Trust level achieved")
+  trust_level SecurityTrustLevel @description("Trust level achieved")
   valid_scopes string[] @description("Scopes that are valid")
   invalid_scopes string[] @description("Scopes that are invalid/expired")
   expires_at string? @description("When credential expires")
@@ -163,7 +163,7 @@ class TrustChainValidation {
   chain_length int @description("Number of entries in chain")
   root_issuer string @description("Root of trust")
   final_subject string @description("End of trust chain")
-  effective_trust_level TrustLevel @description("Trust level after chain analysis")
+  effective_trust_level SecurityTrustLevel @description("Trust level after chain analysis")
   effective_permissions string[] @description("Intersection of all permissions")
   broken_links TrustChainBreak[]? @description("Any breaks in chain")
   warnings string[] @description("Validation warnings")
@@ -219,7 +219,7 @@ class PermissionCondition {
 class SecurityValidation {
   validation_id string @description("Unique validation identifier")
   valid bool @description("Whether validation passed")
-  trust_level TrustLevel @description("Established trust level")
+  trust_level SecurityTrustLevel @description("Established trust level")
   granted_permissions string[] @description("Permissions granted")
   denied_permissions string[] @description("Permissions denied")
   required_permissions string[] @description("Permissions that were required")
@@ -270,7 +270,7 @@ class SecurityAuditEntry {
   target string? @description("Target of the action")
   action string @description("Action performed")
   result string @description("Result of action")
-  trust_level TrustLevel? @description("Trust level at time of event")
+  trust_level SecurityTrustLevel? @description("Trust level at time of event")
   details AuditDetails @description("Additional event details")
 }
 
@@ -296,7 +296,7 @@ class SecuritySession {
   created_at string @description("ISO 8601 creation timestamp")
   expires_at string @description("ISO 8601 expiration timestamp")
   last_activity string @description("ISO 8601 last activity timestamp")
-  trust_level TrustLevel @description("Session trust level")
+  trust_level SecurityTrustLevel @description("Session trust level")
   permissions string[] @description("Permissions for this session")
   session_token string @description("Session token")
   refresh_token string? @description("Token to refresh session")
@@ -342,7 +342,7 @@ class InputValidationConfig {
 }
 
 /// Result of input validation
-class InputValidationResult {
+class SecurityInputValidationResult {
   valid bool @description("Whether input is valid")
   sanitized_input string? @description("Sanitized version of input")
   blocked_patterns_found string[] @description("Blocked patterns that were found")
@@ -350,7 +350,7 @@ class InputValidationResult {
 }
 
 /// Rate limiting configuration
-class RateLimitConfig {
+class SecurityRateLimitConfig {
   requests_per_minute int @description("Maximum requests per minute")
   requests_per_hour int @description("Maximum requests per hour")
   burst_limit int @description("Maximum burst of requests")
@@ -372,8 +372,8 @@ class RateLimitStatus {
 
 /// Validate a security context against required permissions
 function ValidateSecurityContext(
-  context string,
-  required_permissions string
+  context: string,
+  required_permissions: string
 ) -> SecurityValidation {
   client CustomSonnet4
   prompt #"
@@ -397,8 +397,8 @@ function ValidateSecurityContext(
 
 /// Analyze trust chain for security issues
 function AnalyzeTrustChain(
-  trust_chain string,
-  target_permissions string
+  trust_chain: string,
+  target_permissions: string
 ) -> TrustChainValidation {
   client CustomSonnet4
   prompt #"
@@ -423,8 +423,8 @@ function AnalyzeTrustChain(
 
 /// Generate security recommendations
 function GenerateSecurityRecommendations(
-  validation_result string,
-  threat_model string
+  validation_result: string,
+  threat_model: string
 ) -> SecurityRecommendations {
   client CustomSonnet4
   prompt #"

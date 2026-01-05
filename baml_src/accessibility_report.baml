@@ -8,7 +8,7 @@
 // ============================================
 
 /// Executive summary of accessibility report
-class AccessibilitySummary {
+class ReportAccessibilitySummary {
   total_components int @description("Total number of components evaluated")
   passing_components int @description("Components meeting target level")
   critical_violations int @description("Count of critical violations")
@@ -87,7 +87,7 @@ class ReportViolation {
 // ============================================
 
 /// Complete accessibility compliance report
-class AccessibilityReport {
+class DetailedAccessibilityReport {
   schema_name string @description("Name of the evaluated schema")
   target_level string @description("Target compliance level (A, AA, AAA)")
   achieved_level string? @description("Actually achieved level")
@@ -95,7 +95,7 @@ class AccessibilityReport {
   score_percentage int @description("Score as percentage")
   passes bool @description("Whether target level was achieved")
   generated_at string @description("ISO timestamp of report generation")
-  summary AccessibilitySummary @description("Executive summary")
+  summary ReportAccessibilitySummary @description("Executive summary")
   component_details ComponentAccessibilityReport[] @description("Per-component details")
   disability_coverage DisabilityAccessibilityReport[] @description("Per-disability coverage")
   violations ReportViolation[] @description("All violations found")
@@ -122,10 +122,10 @@ class ReportGenerationInput {
 
 /// Generate executive summary from violations
 function GenerateAccessibilitySummary(
-  violations ReportViolation[],
-  component_count int,
-  passing_count int
-) -> AccessibilitySummary {
+  violations: ReportViolation[],
+  component_count: int,
+  passing_count: int
+) -> ReportAccessibilitySummary {
   client CustomSonnet4
   prompt #"
     Generate an executive summary of accessibility findings.
@@ -148,8 +148,8 @@ function GenerateAccessibilitySummary(
 
 /// Generate prioritized recommendations
 function GenerateRecommendations(
-  violations ReportViolation[],
-  disability_reports DisabilityAccessibilityReport[]
+  violations: ReportViolation[],
+  disability_reports: DisabilityAccessibilityReport[]
 ) -> AccessibilityRecommendation[] {
   client CustomSonnet4
   prompt #"
@@ -178,9 +178,9 @@ function GenerateRecommendations(
 
 /// Analyze schema for accessibility and generate full report
 function AnalyzeAccessibility(
-  schema_json string,
-  target_level string
-) -> AccessibilityReport {
+  schema_json: string,
+  target_level: string
+) -> DetailedAccessibilityReport {
   client CustomSonnet4
   prompt #"
     Analyze the schema for accessibility compliance.

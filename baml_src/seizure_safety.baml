@@ -163,9 +163,9 @@ class SeizureSafetyThresholds {
 
 /// Analyze flash content for seizure safety
 function AnalyzeFlashSafety(
-  frequency_hz float,
-  area_percent float,
-  is_red bool
+  frequency_hz: float,
+  area_percent: float,
+  is_red: bool
 ) -> FlashAnalysis {
   client CustomSonnet4
   prompt #"
@@ -197,8 +197,8 @@ function AnalyzeFlashSafety(
 
 /// Analyze animation for seizure safety
 function AnalyzeAnimationSafety(
-  config AnimationConfig,
-  target_level ComplianceLevel
+  config: AnimationConfig,
+  target_level: ComplianceLevel
 ) -> AnimationSafetyResult {
   client CustomSonnet4
   prompt #"
@@ -234,8 +234,8 @@ function AnalyzeAnimationSafety(
 
 /// Validate complete content for seizure safety
 function ValidateSeizureSafety(
-  content ContentConfig,
-  target_level ComplianceLevel
+  content: ContentConfig,
+  target_level: ComplianceLevel
 ) -> SeizureSafetyResult {
   client CustomSonnet4
   prompt #"

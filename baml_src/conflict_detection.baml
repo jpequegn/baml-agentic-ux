@@ -108,13 +108,13 @@ class ResolutionStep {
 
 /// Effort estimate for resolution
 class EffortEstimate {
-  level EffortLevel @description("Overall effort level")
+  level ConflictEffortLevel @description("Overall effort level")
   estimated_hours float? @description("Estimated hours if quantifiable")
   complexity_factors string[] @description("Factors contributing to complexity")
 }
 
 /// Effort levels for resolution
-enum EffortLevel {
+enum ConflictEffortLevel {
   TRIVIAL @description("Automatic or near-instant")
   LOW @description("Minutes of work")
   MEDIUM @description("Hours of work")
@@ -238,9 +238,9 @@ class ConflictDetectionResponse {
 
 /// Analyze conflicts between two schemas and generate resolution suggestions
 function AnalyzeSchemaConflicts(
-  source_schema string,
-  target_schema string,
-  context string?
+  source_schema: string,
+  target_schema: string,
+  context: string?
 ) -> ConflictAnalysis {
   client CustomSonnet4
   prompt #"
@@ -271,9 +271,9 @@ function AnalyzeSchemaConflicts(
 
 /// Suggest the optimal resolution strategy for a set of conflicts
 function SuggestResolutionStrategy(
-  conflicts Conflict[],
-  available_strategies ResolutionStrategy[],
-  constraints string[]?
+  conflicts: Conflict[],
+  available_strategies: ResolutionStrategy[],
+  constraints: string[]?
 ) -> ResolutionPath[] {
   client CustomSonnet4
   prompt #"
@@ -302,9 +302,9 @@ function SuggestResolutionStrategy(
 
 /// Validate whether a proposed resolution will work
 function ValidateResolution(
-  conflict Conflict,
-  proposed_resolution ResolutionPath,
-  current_state string
+  conflict: Conflict,
+  proposed_resolution: ResolutionPath,
+  current_state: string
 ) -> ResolutionValidation {
   client CustomSonnet4
   prompt #"

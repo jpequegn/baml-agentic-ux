@@ -46,8 +46,8 @@ enum ScreenReader {
   ORCA @description("Linux")
 }
 
-/// Types of content for automatic configuration
-enum ContentType {
+/// Types of content for automatic ARIA configuration
+enum ARIAContentType {
   MESSAGE @description("Standard message/response")
   ERROR @description("Error message")
   WARNING @description("Warning message")
@@ -90,7 +90,7 @@ class LiveRegionInput {
   content string @description("Content to wrap in live region")
   politeness ARIAPoliteness @description("Politeness level")
   role ARIARole? @description("Optional specific role")
-  content_type ContentType? @description("Type of content for auto-config")
+  content_type ARIAContentType? @description("Type of content for auto-config")
   sender string? @description("Who sent the message (for chat)")
   aria_label string? @description("Custom accessible label")
 }
@@ -146,7 +146,7 @@ class ScreenReaderCompatibility {
 
 /// Generate ARIA live region for content
 function GenerateLiveRegion(
-  input LiveRegionInput
+  input: LiveRegionInput
 ) -> LiveRegionResult {
   client CustomSonnet4
   prompt #"
@@ -186,8 +186,8 @@ function GenerateLiveRegion(
 
 /// Analyze content and recommend ARIA configuration
 function RecommendARIAConfig(
-  content string,
-  context string
+  content: string,
+  context: string
 ) -> ARIAConfig {
   client CustomSonnet4
   prompt #"
@@ -214,7 +214,7 @@ function RecommendARIAConfig(
 
 /// Validate ARIA live region markup
 function ValidateARIAMarkup(
-  html string
+  html: string
 ) -> LiveRegionResult {
   client CustomSonnet4
   prompt #"

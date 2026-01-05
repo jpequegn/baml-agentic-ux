@@ -240,7 +240,7 @@ class ExecuteCompositionRequest {
   plan_id string @description("ID of the plan to execute")
   inputs ExecutionInputs @description("Inputs for the execution")
   config OrchestrationConfig @description("Orchestration configuration")
-  context ExecutionContext? @description("Execution context")
+  context CompositionExecutionContext? @description("Execution context")
 }
 
 /// Inputs for composition execution
@@ -264,8 +264,8 @@ class SecretReference {
   key string @description("Key within the source")
 }
 
-/// Context for execution
-class ExecutionContext {
+/// Context for composition execution
+class CompositionExecutionContext {
   session_id string? @description("Session identifier")
   user_id string? @description("User identifier")
   trace_id string? @description("Distributed trace ID")
@@ -334,9 +334,9 @@ class CircuitBreakerStatus {
 
 /// Execute a composition plan
 function ExecuteComposition(
-  plan string,
-  inputs string,
-  config string
+  plan: string,
+  inputs: string,
+  config: string
 ) -> CompositionExecution {
   client CustomSonnet4
   prompt #"
@@ -364,9 +364,9 @@ function ExecuteComposition(
 
 /// Generate a recovery plan for a failed execution
 function RecoverFromFailure(
-  execution string,
-  error string,
-  available_agents string
+  execution: string,
+  error: string,
+  available_agents: string
 ) -> RecoveryPlan {
   client CustomSonnet4
   prompt #"
@@ -394,8 +394,8 @@ function RecoverFromFailure(
 
 /// Determine optimal execution order considering parallelism
 function PlanExecutionOrder(
-  plan string,
-  config string
+  plan: string,
+  config: string
 ) -> ExecutionOrder {
   client CustomSonnet4
   prompt #"

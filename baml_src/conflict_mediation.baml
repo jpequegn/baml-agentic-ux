@@ -20,7 +20,7 @@ enum MediationStyle {
 }
 
 /// Strategy for resolving deadlocks
-enum ResolutionStrategy {
+enum MediationResolutionStrategy {
   TRANSFORM @description("Convert data format to achieve compatibility")
   SUBSET @description("Use common subset of capabilities that both support")
   MEDIATE @description("Third-party mediation to find compromise")
@@ -134,7 +134,7 @@ class ConflictSummaryForMediation {
 /// Entry in conflict history
 class ConflictHistoryEntry {
   timestamp string @description("When this attempt occurred")
-  strategy_tried ResolutionStrategy @description("Strategy that was attempted")
+  strategy_tried MediationResolutionStrategy @description("Strategy that was attempted")
   outcome string @description("What happened")
   notes string? @description("Additional notes")
 }
@@ -231,7 +231,7 @@ class DeadlockResolutionRequest {
   deadlock_turns int @description("Number of turns in deadlock")
   turn_history TurnSummary[] @description("Recent turn summaries")
   party_positions PartyPosition[] @description("Current positions of all parties")
-  previously_tried ResolutionStrategy[] @description("Strategies already attempted")
+  previously_tried MediationResolutionStrategy[] @description("Strategies already attempted")
 }
 
 /// Summary of a negotiation turn
@@ -248,7 +248,7 @@ class DeadlockResolution {
   resolution_id string @description("Unique resolution identifier")
   request_id string @description("Original request ID")
   resolution_possible bool @description("Whether resolution is possible")
-  strategy ResolutionStrategy @description("Recommended strategy")
+  strategy MediationResolutionStrategy @description("Recommended strategy")
   proposal CompromiseProposal? @description("Proposed resolution if any")
   explanation string @description("Explanation of the recommendation")
   escalation_needed bool @description("Whether escalation is needed")
@@ -259,7 +259,7 @@ class DeadlockResolution {
 
 /// An alternative strategy option
 class AlternativeStrategy {
-  strategy ResolutionStrategy @description("The strategy")
+  strategy MediationResolutionStrategy @description("The strategy")
   description string @description("How to apply it")
   pros string[] @description("Advantages")
   cons string[] @description("Disadvantages")
@@ -298,7 +298,7 @@ class EscalationResponse {
 
 /// Mediate a conflict between two parties
 function MediateConflict(
-  request MediationRequest
+  request: MediationRequest
 ) -> MediationResult {
   client CustomSonnet4
   prompt #"
@@ -327,7 +327,7 @@ function MediateConflict(
 
 /// Resolve a deadlock in negotiation
 function ResolveDeadlock(
-  request DeadlockResolutionRequest
+  request: DeadlockResolutionRequest
 ) -> DeadlockResolution {
   client CustomSonnet4
   prompt #"
@@ -353,8 +353,8 @@ function ResolveDeadlock(
 
 /// Find common ground between party positions
 function FindCommonGround(
-  party_a PartyPosition,
-  party_b PartyPosition
+  party_a: PartyPosition,
+  party_b: PartyPosition
 ) -> CommonGroundAnalysis {
   client CustomSonnet4
   prompt #"
@@ -422,9 +422,9 @@ class IncompatibleTerm {
 
 /// Generate creative solutions for a conflict
 function GenerateCreativeSolutions(
-  conflict ConflictSummaryForMediation,
-  constraints string[],
-  preferences string[]
+  conflict: ConflictSummaryForMediation,
+  constraints: string[],
+  preferences: string[]
 ) -> CreativeSolution[] {
   client CustomSonnet4
   prompt #"

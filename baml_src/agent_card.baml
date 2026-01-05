@@ -24,7 +24,7 @@ enum ProtocolType {
 
 /// Protocol version declaration
 class SupportedProtocol {
-  protocol ProtocolType @description("Protocol type")
+  comm_protocol ProtocolType @description("Protocol type")
   version string @description("Protocol version (semver)")
   uri string? @description("Protocol specification URI")
   extensions string[]? @description("Supported protocol extensions")
@@ -72,7 +72,7 @@ class AuthConfig {
 class CardEndpoint {
   endpoint_type EndpointType @description("Type of endpoint")
   url string @description("Endpoint URL")
-  protocol ProtocolType @description("Communication protocol")
+  comm_protocol ProtocolType @description("Communication protocol")
   auth_config AuthConfig? @description("Authentication configuration")
   timeout_ms int? @description("Request timeout in milliseconds")
   retry_policy RetryPolicy? @description("Retry policy for this endpoint")
@@ -207,7 +207,7 @@ class AgentCardError {
 class ProtocolNegotiationRequest {
   request_id string @description("Unique request identifier")
   client_protocols SupportedProtocol[] @description("Protocols supported by client")
-  preferred_protocol ProtocolType? @description("Client's preferred protocol")
+  preferred_comm_protocol ProtocolType? @description("Client's preferred protocol")
   capabilities_required string[]? @description("Capability IDs that must be supported")
 }
 

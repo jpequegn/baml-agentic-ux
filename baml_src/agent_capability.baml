@@ -30,7 +30,7 @@ class AgentCapability {
   input_schema SchemaDefinition @description("Schema for capability input")
   output_schema SchemaDefinition @description("Schema for capability output")
   constraints CapabilityConstraint[] @description("Constraints on capability usage")
-  performance_hints PerformanceHints? @description("Expected performance characteristics")
+  performance_hints CapabilityPerformanceHints? @description("Expected performance characteristics")
   trust_requirements TrustRequirements? @description("Trust requirements for this capability")
   examples CapabilityExample[]? @description("Usage examples")
   deprecated bool @description("Whether this capability is deprecated")
@@ -138,7 +138,7 @@ enum ConstraintEnforcement {
 // ============================================
 
 /// Performance characteristics of a capability
-class PerformanceHints {
+class CapabilityPerformanceHints {
   typical_latency_ms int @description("Typical response time in milliseconds")
   max_latency_ms int @description("Maximum expected response time")
   throughput_rps float @description("Expected requests per second capacity")
