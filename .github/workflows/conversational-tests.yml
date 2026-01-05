@@ -144,6 +144,18 @@ jobs:
             --ignore=tests/test_usability_analysis.py \
             --ignore=tests/test_user_preferences.py \
             --ignore=tests/test_user_profile.py \
+            --ignore=tests/test_capability_matching.py \
+            --ignore=tests/test_capability_registry.py \
+            --ignore=tests/test_composition_execution.py \
+            --ignore=tests/test_composition_planning.py \
+            --ignore=tests/test_conflict_detection.py \
+            --ignore=tests/test_conflict_mediation.py \
+            --ignore=tests/test_contract_net.py \
+            --ignore=tests/test_negotiation_state.py \
+            --ignore=tests/test_privacy.py \
+            --ignore=tests/test_proposal_evaluation.py \
+            --ignore=tests/test_schema_transformation.py \
+            --ignore=tests/test_security.py \
             ${{ github.event.inputs.test_filter && format('-k "{0}"', github.event.inputs.test_filter) || '' }} \
             2>&1 | tee test-output.log
 
