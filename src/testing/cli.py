@@ -4,10 +4,13 @@ Provides command-line interface for running conversation tests,
 generating reports, and checking quality gates.
 
 Part of Task 6.8: CI/CD Integration
-Issue #96 - Phase 6: Conversational Testing Framework
+Part of Task 6.10: CLI & Configuration
+Issue #96, #98 - Phase 6: Conversational Testing Framework
 """
 
+import fnmatch
 import json
+import re
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -16,15 +19,18 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+import yaml
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
+from rich.tree import Tree
 
+from .config import ConfigLoader, ConvTestConfig, get_config_template, load_config
 from .loader import ConversationTestLoader, LoaderConfig
 from .report_generator import ReportConfig, ReportFormat, ReportGenerator
 from .runner import ConversationTestRunner, MockResponseHandler, RunnerConfig
-from .types import TestStatus, TestSuiteResult
+from .types import TestCategory, TestPriority, TestStatus, TestSuiteResult
 
 app = typer.Typer(
     name="convtest",
@@ -576,6 +582,675 @@ def version() -> None:
     """Show version information."""
     console.print("Conversational Testing Framework v1.0.0")
     console.print("Part of baml-agentic-ux")
+
+
+@app.command()
+def validate(
+    path: str = typer.Argument(
+        "tests/conversations",
+        help="Path to test file or directory to validate",
+    ),
+    strict: bool = typer.Option(
+        False,
+        "--strict",
+        help="Enable strict validation mode",
+    ),
+    output: OutputFormat = typer.Option(
+        OutputFormat.TEXT,
+        "--output",
+        "-o",
+        help="Output format",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Show detailed validation results",
+    ),
+    quiet: bool = typer.Option(
+        False,
+        "--quiet",
+        "-q",
+        help="Only show errors",
+    ),
+) -> None:
+    """Validate test files without running them."""
+    test_path = Path(path)
+
+    if not test_path.exists():
+        console.print(f"[red]Error: Path not found: {path}[/red]")
+        raise typer.Exit(1)
+
+    # Configure loader for validation
+    loader_config = LoaderConfig(
+        strict_validation=strict,
+    )
+    loader = ConversationTestLoader(config=loader_config)
+
+    # Store results as (path, valid, test_count, errors)
+    validation_results: list[tuple[Path, bool, int, list]] = []
+    total_tests = 0
+    error_count = 0
+    warning_count = 0
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+        disable=quiet,
+    ) as progress:
+        progress.add_task("Validating test files...", total=None)
+
+        if test_path.is_file():
+            files = [test_path]
+        else:
+            files = list(test_path.rglob("*.yaml")) + list(test_path.rglob("*.yml"))
+
+        for file_path in files:
+            try:
+                # Try to load the file to validate it
+                with open(file_path) as f:
+                    data = yaml.safe_load(f)
+
+                if data is None:
+                    validation_results.append((file_path, False, 0, ["Empty file"]))
+                    error_count += 1
+                    continue
+
+                # Count tests in the file
+                file_test_count = 0
+                file_errors = []
+
+                if isinstance(data, dict):
+                    # Could be a suite or single test
+                    if "tests" in data:
+                        tests = data.get("tests", [])
+                        file_test_count = len(tests) if tests else 0
+                    elif "test_id" in data:
+                        file_test_count = 1
+                    else:
+                        file_errors.append("Invalid format: expected 'tests' array or 'test_id'")
+
+                    # Validate required fields for suite
+                    if "tests" in data:
+                        if "suite_id" not in data:
+                            file_errors.append("Missing required field: suite_id")
+                        if "name" not in data:
+                            file_errors.append("Missing required field: name")
+                elif isinstance(data, list):
+                    # List of tests
+                    file_test_count = len(data)
+                else:
+                    file_errors.append("Invalid format: expected dict or list")
+
+                is_valid = len(file_errors) == 0
+                if is_valid:
+                    total_tests += file_test_count
+                else:
+                    error_count += len(file_errors)
+
+                validation_results.append((file_path, is_valid, file_test_count, file_errors))
+
+            except yaml.YAMLError as e:
+                validation_results.append((file_path, False, 0, [f"YAML parse error: {e}"]))
+                error_count += 1
+            except Exception as e:
+                validation_results.append((file_path, False, 0, [str(e)]))
+                error_count += 1
+
+    # Output results
+    if output == OutputFormat.JSON:
+        _print_validation_json(validation_results)
+    else:
+        _print_validation_text(validation_results, verbose, quiet)
+
+    # Summary
+    if not quiet:
+        console.print()
+        valid_files = sum(1 for _, valid, _, _ in validation_results if valid)
+        console.print(
+            f"Validated [bold]{len(validation_results)}[/bold] files: "
+            f"[green]{valid_files} valid[/green], "
+            f"[red]{error_count} errors[/red], "
+            f"[yellow]{warning_count} warnings[/yellow]"
+        )
+        console.print(f"Total test cases found: [bold]{total_tests}[/bold]")
+
+    if error_count > 0:
+        raise typer.Exit(1)
+
+
+def _print_validation_text(
+    results: list[tuple[Path, bool, int, list]],
+    verbose: bool,
+    quiet: bool,
+) -> None:
+    """Print validation results in text format."""
+    for file_path, is_valid, test_count, errors in results:
+        if is_valid:
+            if not quiet:
+                console.print(f"[green]✓[/green] {file_path} ({test_count} tests)")
+        else:
+            console.print(f"[red]✗[/red] {file_path}")
+            for error in errors:
+                console.print(f"  [red]ERROR[/red]: {error}")
+
+
+def _print_validation_json(results: list[tuple[Path, bool, int, list]]) -> None:
+    """Print validation results in JSON format."""
+    output_data = {
+        "results": [
+            {
+                "file": str(file_path),
+                "valid": is_valid,
+                "test_count": test_count,
+                "errors": errors,
+            }
+            for file_path, is_valid, test_count, errors in results
+        ],
+        "summary": {
+            "total_files": len(results),
+            "valid_files": sum(1 for _, valid, _, _ in results if valid),
+            "total_tests": sum(tc for _, _, tc, _ in results),
+            "total_errors": sum(len(e) for _, _, _, e in results),
+        },
+    }
+    print(json.dumps(output_data, indent=2))
+
+
+@app.command()
+def coverage(
+    path: str = typer.Argument(
+        "tests/conversations",
+        help="Path to test directory",
+    ),
+    output: OutputFormat = typer.Option(
+        OutputFormat.TEXT,
+        "--output",
+        "-o",
+        help="Output format",
+    ),
+    by_category: bool = typer.Option(
+        False,
+        "--by-category",
+        help="Group coverage by test category",
+    ),
+    by_priority: bool = typer.Option(
+        False,
+        "--by-priority",
+        help="Group coverage by priority level",
+    ),
+    show_gaps: bool = typer.Option(
+        False,
+        "--show-gaps",
+        help="Show coverage gaps and recommendations",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Show detailed coverage information",
+    ),
+) -> None:
+    """Analyze test coverage and show statistics."""
+    test_path = Path(path)
+
+    if not test_path.exists():
+        console.print(f"[red]Error: Path not found: {path}[/red]")
+        raise typer.Exit(1)
+
+    loader = ConversationTestLoader()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        progress.add_task("Analyzing coverage...", total=None)
+
+        suite = loader.load_directory(test_path)
+
+    # Analyze coverage
+    coverage_data = _analyze_coverage(suite)
+
+    if output == OutputFormat.JSON:
+        _print_coverage_json(coverage_data)
+    else:
+        _print_coverage_text(coverage_data, by_category, by_priority, show_gaps, verbose)
+
+
+def _analyze_coverage(suite) -> dict:
+    """Analyze test coverage for a test suite."""
+    tests = suite.tests
+
+    # Category distribution
+    category_counts: dict[str, int] = {}
+    for test in tests:
+        cat = test.category.value if hasattr(test.category, 'value') else str(test.category)
+        category_counts[cat] = category_counts.get(cat, 0) + 1
+
+    # Priority distribution
+    priority_counts: dict[str, int] = {}
+    for test in tests:
+        pri = test.priority.value if hasattr(test.priority, 'value') else str(test.priority)
+        priority_counts[pri] = priority_counts.get(pri, 0) + 1
+
+    # Tag distribution
+    tag_counts: dict[str, int] = {}
+    for test in tests:
+        for tag in test.tags:
+            tag_counts[tag] = tag_counts.get(tag, 0) + 1
+
+    # Intent coverage
+    intents: set[str] = set()
+    for test in tests:
+        for turn in test.turns:
+            if turn.expected_intent:
+                intents.add(turn.expected_intent)
+
+    # Entity coverage
+    entities: set[str] = set()
+    for test in tests:
+        for turn in test.turns:
+            for entity in turn.expected_entities:
+                entities.add(entity.entity_type)
+
+    # Assertion coverage
+    assertion_types: dict[str, int] = {}
+    for test in tests:
+        for turn in test.turns:
+            for assertion in turn.assertions:
+                at = assertion.assertion_type.value if hasattr(assertion.assertion_type, 'value') else str(assertion.assertion_type)
+                assertion_types[at] = assertion_types.get(at, 0) + 1
+
+    # Identify gaps
+    gaps = []
+    all_categories = [c.value for c in TestCategory]
+    all_priorities = [p.value for p in TestPriority]
+
+    for cat in all_categories:
+        if cat not in category_counts:
+            gaps.append(f"No tests for category: {cat}")
+
+    for pri in all_priorities:
+        if pri not in priority_counts:
+            gaps.append(f"No tests with priority: {pri}")
+
+    if len(tests) < 50:
+        gaps.append("Consider adding more tests (current: {}, recommended: 50+)".format(len(tests)))
+
+    return {
+        "total_tests": len(tests),
+        "categories": category_counts,
+        "priorities": priority_counts,
+        "tags": dict(sorted(tag_counts.items(), key=lambda x: -x[1])[:20]),
+        "unique_intents": len(intents),
+        "unique_entities": len(entities),
+        "assertion_types": assertion_types,
+        "gaps": gaps,
+        "intents": sorted(intents),
+        "entities": sorted(entities),
+    }
+
+
+def _print_coverage_text(
+    data: dict,
+    by_category: bool,
+    by_priority: bool,
+    show_gaps: bool,
+    verbose: bool,
+) -> None:
+    """Print coverage analysis in text format."""
+    # Summary
+    console.print(Panel(
+        f"[bold]Total Tests:[/bold] {data['total_tests']}\n"
+        f"[bold]Unique Intents:[/bold] {data['unique_intents']}\n"
+        f"[bold]Unique Entities:[/bold] {data['unique_entities']}",
+        title="Coverage Summary"
+    ))
+
+    # Category breakdown
+    if by_category or verbose:
+        console.print()
+        table = Table(title="Tests by Category")
+        table.add_column("Category", style="cyan")
+        table.add_column("Count", justify="right")
+        table.add_column("Percentage", justify="right")
+
+        total = data["total_tests"]
+        for cat, count in sorted(data["categories"].items(), key=lambda x: -x[1]):
+            pct = (count / total * 100) if total > 0 else 0
+            table.add_row(cat, str(count), f"{pct:.1f}%")
+
+        console.print(table)
+
+    # Priority breakdown
+    if by_priority or verbose:
+        console.print()
+        table = Table(title="Tests by Priority")
+        table.add_column("Priority", style="cyan")
+        table.add_column("Count", justify="right")
+        table.add_column("Percentage", justify="right")
+
+        total = data["total_tests"]
+        priority_order = ["critical", "high", "medium", "low", "exploratory"]
+        for pri in priority_order:
+            if pri in data["priorities"]:
+                count = data["priorities"][pri]
+                pct = (count / total * 100) if total > 0 else 0
+                color = {"critical": "red", "high": "yellow", "medium": "white", "low": "dim", "exploratory": "dim"}.get(pri, "white")
+                table.add_row(f"[{color}]{pri}[/{color}]", str(count), f"{pct:.1f}%")
+
+        console.print(table)
+
+    # Top tags
+    if verbose and data["tags"]:
+        console.print()
+        table = Table(title="Top Tags")
+        table.add_column("Tag", style="cyan")
+        table.add_column("Count", justify="right")
+
+        for tag, count in list(data["tags"].items())[:10]:
+            table.add_row(tag, str(count))
+
+        console.print(table)
+
+    # Coverage gaps
+    if show_gaps and data["gaps"]:
+        console.print()
+        console.print(Panel(
+            "\n".join(f"[yellow]• {gap}[/yellow]" for gap in data["gaps"]),
+            title="Coverage Gaps",
+        ))
+
+
+def _print_coverage_json(data: dict) -> None:
+    """Print coverage analysis in JSON format."""
+    print(json.dumps(data, indent=2))
+
+
+@app.command()
+def generate(
+    output_type: str = typer.Argument(
+        "config",
+        help="What to generate: config, template, or report",
+    ),
+    output_path: Optional[str] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Output file path",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Overwrite existing files",
+    ),
+) -> None:
+    """Generate configuration files, templates, or reports."""
+    if output_type == "config":
+        _generate_config(output_path, force)
+    elif output_type == "template":
+        _generate_template(output_path, force)
+    elif output_type == "report":
+        console.print("[yellow]Use 'convtest run --report-dir=<dir>' to generate reports[/yellow]")
+    else:
+        console.print(f"[red]Unknown output type: {output_type}[/red]")
+        console.print("Valid options: config, template, report")
+        raise typer.Exit(1)
+
+
+def _generate_config(output_path: Optional[str], force: bool) -> None:
+    """Generate default configuration file."""
+    path = Path(output_path or "convtest.yaml")
+
+    if path.exists() and not force:
+        console.print(f"[red]File already exists: {path}[/red]")
+        console.print("Use --force to overwrite")
+        raise typer.Exit(1)
+
+    content = get_config_template()
+    path.write_text(content)
+    console.print(f"[green]✓[/green] Generated configuration file: [bold]{path}[/bold]")
+
+
+def _generate_template(output_path: Optional[str], force: bool) -> None:
+    """Generate test template file."""
+    path = Path(output_path or "test_template.yaml")
+
+    if path.exists() and not force:
+        console.print(f"[red]File already exists: {path}[/red]")
+        console.print("Use --force to overwrite")
+        raise typer.Exit(1)
+
+    template = '''# Conversational Test Template
+# Generated by convtest CLI
+
+suite_id: my-test-suite
+name: My Test Suite
+description: Description of what this test suite covers
+execution_order: sequential
+tags:
+  - example
+  - template
+
+tests:
+  - test_id: test-001
+    name: Basic Intent Recognition
+    description: Test that basic intents are recognized correctly
+    category: intent_recognition
+    priority: high
+    tags:
+      - intent
+      - basic
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Hello, I need help"
+        expected_intent: greeting
+        assertions:
+          - assertion_id: friendly-response
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(hello|hi|hey|help)"
+            severity: error
+
+  - test_id: test-002
+    name: Entity Extraction
+    description: Test entity extraction from user input
+    category: entity_extraction
+    priority: high
+    tags:
+      - entity
+      - extraction
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task called buy groceries for tomorrow"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value: "buy groceries"
+          - entity_type: due_date
+            value_pattern: "tomorrow"
+        assertions:
+          - assertion_id: confirms-creation
+            assertion_type: response_pattern
+            target: response
+            operator: contains
+            expected_value: "created"
+'''
+    path.write_text(template)
+    console.print(f"[green]✓[/green] Generated test template: [bold]{path}[/bold]")
+
+
+@app.command()
+def config(
+    show: bool = typer.Option(
+        False,
+        "--show",
+        "-s",
+        help="Show current configuration",
+    ),
+    config_file: Optional[str] = typer.Option(
+        None,
+        "--config",
+        "-c",
+        help="Path to configuration file",
+    ),
+    validate_config: bool = typer.Option(
+        False,
+        "--validate",
+        help="Validate configuration file",
+    ),
+) -> None:
+    """Manage configuration settings."""
+    if show or not validate_config:
+        loader = ConfigLoader(config_file)
+        cfg = loader.load()
+
+        console.print(Panel(
+            f"[bold]Version:[/bold] {cfg.version}\n"
+            f"[bold]Strict Mode:[/bold] {cfg.strict_mode}\n"
+            f"[bold]Config File:[/bold] {loader._find_config_file() or 'None (using defaults)'}\n"
+            f"\n[cyan]Quality Gates:[/cyan]\n"
+            f"  Min Pass Rate: {cfg.quality_gates.min_pass_rate}%\n"
+            f"  Min Intent Accuracy: {cfg.quality_gates.min_intent_accuracy}%\n"
+            f"  Min Coherence: {cfg.quality_gates.min_coherence}\n"
+            f"  Min Naturalness: {cfg.quality_gates.min_naturalness}\n"
+            f"  Min Coverage: {cfg.quality_gates.min_coverage}%\n"
+            f"\n[cyan]Execution:[/cyan]\n"
+            f"  Parallel: {cfg.execution.parallel}\n"
+            f"  Max Workers: {cfg.execution.max_workers}\n"
+            f"  Timeout: {cfg.execution.timeout_seconds}s\n"
+            f"\n[cyan]Reporting:[/cyan]\n"
+            f"  Output Dir: {cfg.reporting.output_dir}\n"
+            f"  Formats: {', '.join(cfg.reporting.formats)}\n"
+            f"\n[cyan]Paths:[/cyan]\n"
+            f"  Test Dirs: {', '.join(cfg.paths.test_dirs)}\n"
+            f"  Templates: {cfg.paths.templates_dir}",
+            title="Current Configuration"
+        ))
+
+    if validate_config:
+        loader = ConfigLoader(config_file)
+        try:
+            cfg = loader.load()
+            console.print("[green]✓[/green] Configuration is valid")
+        except Exception as e:
+            console.print(f"[red]✗[/red] Configuration error: {e}")
+            raise typer.Exit(1)
+
+
+@app.command()
+def list_tests(
+    path: str = typer.Argument(
+        "tests/conversations",
+        help="Path to test directory",
+    ),
+    tags: Optional[str] = typer.Option(
+        None,
+        "--tags",
+        "-t",
+        help="Filter by tags (comma-separated)",
+    ),
+    category: Optional[str] = typer.Option(
+        None,
+        "--category",
+        "-c",
+        help="Filter by category",
+    ),
+    priority: Optional[str] = typer.Option(
+        None,
+        "--priority",
+        "-p",
+        help="Filter by priority",
+    ),
+    pattern: Optional[str] = typer.Option(
+        None,
+        "--pattern",
+        "-k",
+        help="Filter by name/ID pattern",
+    ),
+    output: OutputFormat = typer.Option(
+        OutputFormat.TEXT,
+        "--output",
+        "-o",
+        help="Output format",
+    ),
+) -> None:
+    """List available tests with filtering options."""
+    test_path = Path(path)
+
+    if not test_path.exists():
+        console.print(f"[red]Error: Path not found: {path}[/red]")
+        raise typer.Exit(1)
+
+    loader = ConversationTestLoader()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        progress.add_task("Loading tests...", total=None)
+        suite = loader.load_directory(test_path)
+
+    tests = suite.tests
+
+    # Apply filters
+    if tags:
+        tag_list = [t.strip() for t in tags.split(",")]
+        tests = [t for t in tests if any(tag in t.tags for tag in tag_list)]
+
+    if category:
+        tests = [t for t in tests if t.category.value == category or str(t.category) == category]
+
+    if priority:
+        tests = [t for t in tests if t.priority.value == priority or str(t.priority) == priority]
+
+    if pattern:
+        tests = [t for t in tests if fnmatch.fnmatch(t.test_id.lower(), f"*{pattern.lower()}*") or
+                 fnmatch.fnmatch(t.name.lower(), f"*{pattern.lower()}*")]
+
+    if output == OutputFormat.JSON:
+        print(json.dumps([{
+            "test_id": t.test_id,
+            "name": t.name,
+            "category": t.category.value if hasattr(t.category, 'value') else str(t.category),
+            "priority": t.priority.value if hasattr(t.priority, 'value') else str(t.priority),
+            "tags": t.tags,
+            "turns": len(t.turns),
+        } for t in tests], indent=2))
+    else:
+        table = Table(title=f"Tests ({len(tests)} found)")
+        table.add_column("ID", style="cyan", no_wrap=True)
+        table.add_column("Name")
+        table.add_column("Category")
+        table.add_column("Priority")
+        table.add_column("Tags", style="dim")
+        table.add_column("Turns", justify="right")
+
+        for test in tests:
+            priority_color = {
+                "critical": "red",
+                "high": "yellow",
+                "medium": "white",
+                "low": "dim",
+            }.get(test.priority.value if hasattr(test.priority, 'value') else str(test.priority), "white")
+
+            table.add_row(
+                test.test_id,
+                test.name[:40] + "..." if len(test.name) > 40 else test.name,
+                test.category.value if hasattr(test.category, 'value') else str(test.category),
+                f"[{priority_color}]{test.priority.value if hasattr(test.priority, 'value') else str(test.priority)}[/{priority_color}]",
+                ", ".join(test.tags[:3]) + ("..." if len(test.tags) > 3 else ""),
+                str(len(test.turns)),
+            )
+
+        console.print(table)
 
 
 def main() -> None:
