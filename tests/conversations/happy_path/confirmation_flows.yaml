@@ -1,0 +1,468 @@
+# Confirmation Flow Tests
+# Test cases for confirmation and parameter handling
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: happy-path-confirmation-flows
+name: Confirmation Flow Tests
+description: Tests for confirmation dialogs and parameter handling
+execution_order: sequential
+tags:
+  - happy-path
+  - confirmation
+  - parameters
+
+tests:
+  # ============================================
+  # Simple Confirmations
+  # ============================================
+
+  - test_id: hp-cf-001
+    name: Confirm Delete Action
+    description: User confirms a destructive action
+    category: dialogue_flow
+    priority: critical
+    tags:
+      - delete
+      - confirm
+    setup:
+      initial_context:
+        pending_action: "delete_task"
+        target_item: "grocery list"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "Are you sure you want to delete 'grocery list'?"
+      - turn_number: 2
+        role: user
+        input: "Yes, delete it"
+        expected_intent: confirmation_yes
+        assertions:
+          - assertion_id: action-completed
+            assertion_type: response_contains
+            target: response
+            operator: matches
+            expected_value: "(?i)(deleted|removed|done)"
+
+  - test_id: hp-cf-002
+    name: Cancel Delete Action
+    description: User cancels a destructive action
+    category: dialogue_flow
+    priority: critical
+    tags:
+      - delete
+      - cancel
+    setup:
+      initial_context:
+        pending_action: "delete_task"
+        target_item: "important meeting"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "Are you sure you want to delete 'important meeting'?"
+      - turn_number: 2
+        role: user
+        input: "No, keep it"
+        expected_intent: confirmation_no
+        assertions:
+          - assertion_id: action-cancelled
+            assertion_type: response_contains
+            target: response
+            operator: matches
+            expected_value: "(?i)(cancel|keep|not deleted|unchanged)"
+
+  - test_id: hp-cf-003
+    name: Implicit Confirmation
+    description: User provides implicit confirmation
+    category: dialogue_flow
+    priority: high
+    tags:
+      - confirm
+      - implicit
+    setup:
+      initial_context:
+        pending_action: "send_email"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "Should I send the email now?"
+      - turn_number: 2
+        role: user
+        input: "Sure, go ahead"
+        expected_intent: confirmation_yes
+
+  - test_id: hp-cf-004
+    name: Implicit Denial
+    description: User provides implicit denial
+    category: dialogue_flow
+    priority: high
+    tags:
+      - deny
+      - implicit
+    setup:
+      initial_context:
+        pending_action: "send_email"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "Should I send the email now?"
+      - turn_number: 2
+        role: user
+        input: "Actually, let me review it first"
+        expected_intent: confirmation_no
+
+  # ============================================
+  # Parameter Collection
+  # ============================================
+
+  - test_id: hp-cf-005
+    name: Collect Missing Parameter
+    description: System asks for and receives missing parameter
+    category: dialogue_flow
+    priority: critical
+    tags:
+      - parameter
+      - collection
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "What would you like to call this task?"
+      - turn_number: 3
+        role: user
+        input: "Buy groceries"
+        expected_entities:
+          - entity_type: task_name
+            value: "Buy groceries"
+            required: true
+
+  - test_id: hp-cf-006
+    name: Collect Multiple Parameters
+    description: System collects multiple missing parameters
+    category: dialogue_flow
+    priority: high
+    tags:
+      - parameter
+      - multiple
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule a meeting"
+        expected_intent: meeting_schedule
+      - turn_number: 2
+        role: assistant
+        input: "When would you like to schedule the meeting?"
+      - turn_number: 3
+        role: user
+        input: "Tomorrow at 2pm"
+        expected_entities:
+          - entity_type: date
+            value: "tomorrow"
+          - entity_type: time
+            value_pattern: "2\\s*pm"
+      - turn_number: 4
+        role: assistant
+        input: "Who should attend?"
+      - turn_number: 5
+        role: user
+        input: "Just me and John"
+        expected_entities:
+          - entity_type: attendees
+            value_pattern: "John"
+
+  - test_id: hp-cf-007
+    name: Update Parameter Value
+    description: User corrects a parameter value
+    category: dialogue_flow
+    priority: high
+    tags:
+      - parameter
+      - correction
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task called buy milk"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value: "buy milk"
+      - turn_number: 2
+        role: assistant
+        input: "Created task 'buy milk'"
+      - turn_number: 3
+        role: user
+        input: "Actually, change that to buy almond milk"
+        expected_intent: task_update
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "almond milk"
+
+  # ============================================
+  # Slot Filling
+  # ============================================
+
+  - test_id: hp-cf-008
+    name: Fill Required Slot
+    description: User provides value for required slot
+    category: dialogue_flow
+    priority: critical
+    tags:
+      - slot
+      - required
+    setup:
+      initial_context:
+        current_intent: "reminder_set"
+        required_slots: "time,description"
+        filled_slots: ""
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "What time should I remind you?"
+      - turn_number: 2
+        role: user
+        input: "At 5pm"
+        expected_entities:
+          - entity_type: time
+            value_pattern: "5\\s*pm"
+            slot_name: "time"
+        context_requirements:
+          - key: filled_slots
+            match_type: contains
+            value_match: "time"
+
+  - test_id: hp-cf-009
+    name: Fill Optional Slot
+    description: User provides value for optional slot
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - slot
+      - optional
+    setup:
+      initial_context:
+        current_intent: "task_create"
+        task_name: "Buy groceries"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "I'll create the task 'Buy groceries'. Any specific priority?"
+      - turn_number: 2
+        role: user
+        input: "Make it high priority"
+        expected_entities:
+          - entity_type: priority
+            value: "high"
+            slot_name: "priority"
+
+  - test_id: hp-cf-010
+    name: Skip Optional Slot
+    description: User skips optional slot
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - slot
+      - skip
+    setup:
+      initial_context:
+        current_intent: "task_create"
+        task_name: "Buy groceries"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "I'll create the task 'Buy groceries'. Any specific priority?"
+      - turn_number: 2
+        role: user
+        input: "No, just create it"
+        expected_intent: confirmation_yes
+        assertions:
+          - assertion_id: task-created
+            assertion_type: response_contains
+            target: response
+            operator: matches
+            expected_value: "(?i)(created|done|added)"
+
+  # ============================================
+  # Disambiguation
+  # ============================================
+
+  - test_id: hp-cf-011
+    name: Disambiguate Similar Items
+    description: User selects from similar options
+    category: dialogue_flow
+    priority: high
+    tags:
+      - disambiguation
+    setup:
+      initial_context:
+        ambiguous_results: "meeting-1,meeting-2,meeting-3"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "I found multiple meetings. Which one: 1) Team standup, 2) Project review, or 3) One-on-one?"
+      - turn_number: 2
+        role: user
+        input: "The second one"
+        expected_entities:
+          - entity_type: selection
+            value_pattern: "(2|second)"
+        assertions:
+          - assertion_id: selection-acknowledged
+            assertion_type: response_contains
+            target: response
+            operator: contains
+            expected_value: "Project review"
+
+  - test_id: hp-cf-012
+    name: Disambiguate by Description
+    description: User disambiguates with description
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - disambiguation
+      - description
+    setup:
+      initial_context:
+        ambiguous_results: "task-1,task-2"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "Which task? 1) Buy groceries (today), or 2) Buy groceries (weekly)?"
+      - turn_number: 2
+        role: user
+        input: "The weekly one"
+        expected_entities:
+          - entity_type: selection
+            value_pattern: "weekly"
+
+  # ============================================
+  # Multi-Step Confirmation
+  # ============================================
+
+  - test_id: hp-cf-013
+    name: Multi-Step Wizard
+    description: Complete multi-step wizard flow
+    category: dialogue_flow
+    priority: high
+    tags:
+      - wizard
+      - multi-step
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a new project"
+        expected_intent: project_create
+      - turn_number: 2
+        role: assistant
+        input: "Step 1/3: What's the project name?"
+      - turn_number: 3
+        role: user
+        input: "Website Redesign"
+        expected_entities:
+          - entity_type: project_name
+            value: "Website Redesign"
+      - turn_number: 4
+        role: assistant
+        input: "Step 2/3: What's the deadline?"
+      - turn_number: 5
+        role: user
+        input: "End of month"
+        expected_entities:
+          - entity_type: deadline
+            value_pattern: "end of month"
+      - turn_number: 6
+        role: assistant
+        input: "Step 3/3: Who should be assigned?"
+      - turn_number: 7
+        role: user
+        input: "Assign it to me"
+        expected_entities:
+          - entity_type: assignee
+            value_pattern: "me|self"
+
+  - test_id: hp-cf-014
+    name: Abort Multi-Step
+    description: User aborts multi-step flow
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - wizard
+      - abort
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a new project"
+        expected_intent: project_create
+      - turn_number: 2
+        role: assistant
+        input: "Step 1/3: What's the project name?"
+      - turn_number: 3
+        role: user
+        input: "Actually, cancel this"
+        expected_intent: cancel
+        assertions:
+          - assertion_id: wizard-cancelled
+            assertion_type: response_contains
+            target: response
+            operator: matches
+            expected_value: "(?i)(cancel|abort|stopped)"
+
+  # ============================================
+  # Review and Confirm
+  # ============================================
+
+  - test_id: hp-cf-015
+    name: Review Before Submit
+    description: User reviews and confirms submission
+    category: dialogue_flow
+    priority: high
+    tags:
+      - review
+      - submit
+    setup:
+      initial_context:
+        pending_submission: "expense_report"
+        report_total: "150.00"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "Here's your expense report summary: Total $150.00. Submit it?"
+      - turn_number: 2
+        role: user
+        input: "Yes, submit it"
+        expected_intent: confirmation_yes
+        assertions:
+          - assertion_id: submitted
+            assertion_type: response_contains
+            target: response
+            operator: matches
+            expected_value: "(?i)(submitted|sent|done)"
+
+  - test_id: hp-cf-016
+    name: Request Changes During Review
+    description: User requests changes before confirming
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - review
+      - modify
+    setup:
+      initial_context:
+        pending_submission: "expense_report"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "Here's your expense report summary: Total $150.00. Submit it?"
+      - turn_number: 2
+        role: user
+        input: "Wait, I need to add one more item"
+        expected_intent: modify_request
+        assertions:
+          - assertion_id: modification-enabled
+            assertion_type: response_contains
+            target: response
+            operator: matches
+            expected_value: "(?i)(add|what|item)"

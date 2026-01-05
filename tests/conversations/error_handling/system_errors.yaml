@@ -1,0 +1,398 @@
+# System Error Recovery Tests
+# Test cases for handling system errors gracefully
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: error-handling-system-errors
+name: System Error Recovery Tests
+description: Tests for graceful handling of system errors and recovery
+execution_order: sequential
+tags:
+  - error-handling
+  - system-errors
+  - recovery
+
+tests:
+  # ============================================
+  # Service Unavailable
+  # ============================================
+
+  - test_id: eh-se-001
+    name: External Service Timeout
+    description: Handle timeout from external service
+    category: error_handling
+    priority: critical
+    tags:
+      - timeout
+      - external
+    setup:
+      mock_responses:
+        - trigger_pattern: "calendar_api"
+          response_type: error
+          response_data: "timeout"
+          delay_ms: 5000
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show my calendar events"
+        expected_intent: calendar_query
+        assertions:
+          - assertion_id: graceful-timeout
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(sorry|taking longer|try again|unavailable)"
+            severity: critical
+
+  - test_id: eh-se-002
+    name: Database Unavailable
+    description: Handle database connection failure
+    category: error_handling
+    priority: critical
+    tags:
+      - database
+      - unavailable
+    setup:
+      mock_responses:
+        - trigger_pattern: "db_query"
+          response_type: error
+          response_data: "connection_refused"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show my tasks"
+        expected_intent: task_list
+        assertions:
+          - assertion_id: graceful-db-error
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(sorry|unable|try again|moment)"
+
+  - test_id: eh-se-003
+    name: API Rate Limited
+    description: Handle rate limit response
+    category: error_handling
+    priority: high
+    tags:
+      - rate-limit
+      - api
+    setup:
+      mock_responses:
+        - trigger_pattern: "external_api"
+          response_type: error
+          response_data: "rate_limit_exceeded"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Sync my calendar"
+        expected_intent: calendar_sync
+        assertions:
+          - assertion_id: rate-limit-message
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(limit|wait|try again|later)"
+
+  # ============================================
+  # Transient Errors
+  # ============================================
+
+  - test_id: eh-se-004
+    name: Retry After Transient Error
+    description: System retries after transient failure
+    category: error_handling
+    priority: high
+    tags:
+      - transient
+      - retry
+    setup:
+      mock_responses:
+        - trigger_pattern: "api_call"
+          response_type: error
+          response_data: "503_service_unavailable"
+          fail_after: 1  # Fail first call, succeed after
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Fetch weather data"
+        expected_intent: weather_query
+        assertions:
+          - assertion_id: eventually-succeeds
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "error"
+            severity: warning
+
+  - test_id: eh-se-005
+    name: Network Glitch Recovery
+    description: Recover from network glitch
+    category: error_handling
+    priority: medium
+    tags:
+      - network
+      - recovery
+    setup:
+      mock_responses:
+        - trigger_pattern: "network_call"
+          response_type: error
+          response_data: "network_error"
+          fail_after: 1
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Check server status"
+        expected_intent: status_check
+        assertions:
+          - assertion_id: handles-network-error
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(connection|network|try|status)"
+
+  # ============================================
+  # Partial Failure
+  # ============================================
+
+  - test_id: eh-se-006
+    name: Partial Data Fetch
+    description: Handle partial data retrieval
+    category: error_handling
+    priority: high
+    tags:
+      - partial
+      - data
+    setup:
+      mock_responses:
+        - trigger_pattern: "batch_api"
+          response_type: api_response
+          response_data: '{"items": [{"id": 1}, {"id": 2}], "errors": [{"id": 3, "error": "not_found"}]}'
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show all my projects"
+        expected_intent: project_list
+        assertions:
+          - assertion_id: shows-available
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(project|found|some|available)"
+
+  - test_id: eh-se-007
+    name: Multi-Service Mixed Results
+    description: Handle mixed results from multiple services
+    category: error_handling
+    priority: medium
+    tags:
+      - multi-service
+      - mixed
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Give me a summary of everything"
+        expected_intent: summary_all
+        assertions:
+          - assertion_id: partial-summary
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(summary|available|some|couldn't)"
+            severity: warning
+
+  # ============================================
+  # User Action Required
+  # ============================================
+
+  - test_id: eh-se-008
+    name: Authentication Required
+    description: Handle expired authentication
+    category: error_handling
+    priority: critical
+    tags:
+      - auth
+      - expired
+    setup:
+      mock_responses:
+        - trigger_pattern: "auth_required"
+          response_type: error
+          response_data: "token_expired"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Access my connected accounts"
+        expected_intent: account_access
+        assertions:
+          - assertion_id: asks-reauth
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(sign in|log in|authenticate|connect|expired)"
+
+  - test_id: eh-se-009
+    name: Permission Denied
+    description: Handle permission denied error
+    category: error_handling
+    priority: high
+    tags:
+      - permission
+      - denied
+    setup:
+      mock_responses:
+        - trigger_pattern: "admin_action"
+          response_type: error
+          response_data: "permission_denied"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Delete all team data"
+        expected_intent: data_delete
+        assertions:
+          - assertion_id: permission-message
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(permission|authorized|admin|access)"
+
+  # ============================================
+  # Recovery Actions
+  # ============================================
+
+  - test_id: eh-se-010
+    name: Offer Alternative After Error
+    description: System offers alternative after error
+    category: error_handling
+    priority: high
+    tags:
+      - alternative
+      - recovery
+    setup:
+      mock_responses:
+        - trigger_pattern: "primary_service"
+          response_type: error
+          response_data: "unavailable"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Send notification to team"
+        expected_intent: notification_send
+        assertions:
+          - assertion_id: offers-alternative
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(instead|alternative|try|email|other)"
+
+  - test_id: eh-se-011
+    name: Queue for Retry
+    description: System queues action for later retry
+    category: error_handling
+    priority: medium
+    tags:
+      - queue
+      - retry
+    setup:
+      mock_responses:
+        - trigger_pattern: "delivery_service"
+          response_type: error
+          response_data: "temporarily_unavailable"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Send the report to stakeholders"
+        expected_intent: report_send
+        assertions:
+          - assertion_id: queued-message
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(queue|later|retry|will try|scheduled)"
+
+  - test_id: eh-se-012
+    name: Graceful Degradation
+    description: System provides degraded functionality
+    category: error_handling
+    priority: medium
+    tags:
+      - degraded
+      - graceful
+    setup:
+      mock_responses:
+        - trigger_pattern: "ai_service"
+          response_type: error
+          response_data: "service_degraded"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Summarize this document"
+        expected_intent: document_summarize
+        assertions:
+          - assertion_id: degraded-mode
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(limited|basic|simple|manual|unable to fully)"
+
+  # ============================================
+  # Error Reporting
+  # ============================================
+
+  - test_id: eh-se-013
+    name: Provide Error Reference
+    description: System provides error reference for support
+    category: error_handling
+    priority: low
+    tags:
+      - error-id
+      - support
+    setup:
+      mock_responses:
+        - trigger_pattern: "critical_operation"
+          response_type: error
+          response_data: "internal_error"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Process payment"
+        expected_intent: payment_process
+        assertions:
+          - assertion_id: error-reference
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(error|reference|support|contact|ID)"
+            severity: warning
+
+  - test_id: eh-se-014
+    name: User-Friendly Error Message
+    description: System provides user-friendly error message
+    category: error_handling
+    priority: high
+    tags:
+      - user-friendly
+      - message
+    setup:
+      mock_responses:
+        - trigger_pattern: "database"
+          response_type: error
+          response_data: "SQLSTATE[HY000]: Connection refused"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Save my preferences"
+        expected_intent: preferences_save
+        assertions:
+          - assertion_id: no-technical-jargon
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "SQL"
+            severity: critical
+            message: "Should not expose technical error details"
+          - assertion_id: friendly-message
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(sorry|couldn't save|try again|problem)"

@@ -1,0 +1,424 @@
+# Entity Extraction Tests
+# Test cases for successful entity extraction scenarios
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: happy-path-entity-extraction
+name: Entity Extraction Tests
+description: Tests for successful extraction of various entity types
+execution_order: sequential
+tags:
+  - happy-path
+  - entity-extraction
+
+tests:
+  # ============================================
+  # Date/Time Entities
+  # ============================================
+
+  - test_id: hp-ee-001
+    name: Extract Absolute Date
+    description: Extract a specific date mention
+    category: entity_extraction
+    priority: critical
+    tags:
+      - date
+      - absolute
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule a meeting for January 15th"
+        expected_intent: meeting_schedule
+        expected_entities:
+          - entity_type: date
+            value_pattern: "(January 15|01/15|1/15)"
+            required: true
+
+  - test_id: hp-ee-002
+    name: Extract Relative Date
+    description: Extract relative date references
+    category: entity_extraction
+    priority: critical
+    tags:
+      - date
+      - relative
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Remind me tomorrow about the meeting"
+        expected_intent: reminder_set
+        expected_entities:
+          - entity_type: date
+            value: "tomorrow"
+            required: true
+          - entity_type: reminder_description
+            value_pattern: "meeting"
+
+  - test_id: hp-ee-003
+    name: Extract Time - 12 Hour Format
+    description: Extract time in 12-hour format
+    category: entity_extraction
+    priority: critical
+    tags:
+      - time
+      - 12-hour
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Set alarm for 7:30 AM"
+        expected_intent: alarm_set
+        expected_entities:
+          - entity_type: time
+            value_pattern: "7:30\\s*(AM|am)"
+            required: true
+
+  - test_id: hp-ee-004
+    name: Extract Time - 24 Hour Format
+    description: Extract time in 24-hour format
+    category: entity_extraction
+    priority: high
+    tags:
+      - time
+      - 24-hour
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Meeting starts at 14:00"
+        expected_intent: meeting_info
+        expected_entities:
+          - entity_type: time
+            value: "14:00"
+            required: true
+
+  - test_id: hp-ee-005
+    name: Extract Duration
+    description: Extract duration expressions
+    category: entity_extraction
+    priority: high
+    tags:
+      - duration
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Block 2 hours for deep work"
+        expected_intent: time_block
+        expected_entities:
+          - entity_type: duration
+            value_pattern: "2\\s*hours?"
+          - entity_type: activity
+            value_pattern: "deep work"
+
+  # ============================================
+  # Number Entities
+  # ============================================
+
+  - test_id: hp-ee-006
+    name: Extract Cardinal Number
+    description: Extract count/quantity numbers
+    category: entity_extraction
+    priority: high
+    tags:
+      - number
+      - cardinal
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Add 5 items to the list"
+        expected_intent: list_add
+        expected_entities:
+          - entity_type: quantity
+            value: "5"
+            required: true
+
+  - test_id: hp-ee-007
+    name: Extract Ordinal Number
+    description: Extract ordinal numbers
+    category: entity_extraction
+    priority: medium
+    tags:
+      - number
+      - ordinal
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show me the third task"
+        expected_intent: task_show
+        expected_entities:
+          - entity_type: ordinal
+            value_pattern: "(third|3rd)"
+
+  - test_id: hp-ee-008
+    name: Extract Currency Amount
+    description: Extract monetary values
+    category: entity_extraction
+    priority: high
+    tags:
+      - number
+      - currency
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Add expense of $45.99"
+        expected_intent: expense_add
+        expected_entities:
+          - entity_type: amount
+            value_pattern: "\\$?45\\.99"
+            required: true
+
+  # ============================================
+  # Person Entities
+  # ============================================
+
+  - test_id: hp-ee-009
+    name: Extract Person Name
+    description: Extract a person's name
+    category: entity_extraction
+    priority: high
+    tags:
+      - person
+      - name
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule a call with John Smith"
+        expected_intent: call_schedule
+        expected_entities:
+          - entity_type: person_name
+            value: "John Smith"
+            required: true
+
+  - test_id: hp-ee-010
+    name: Extract Multiple Names
+    description: Extract multiple person names
+    category: entity_extraction
+    priority: medium
+    tags:
+      - person
+      - multiple
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Invite Alice and Bob to the meeting"
+        expected_intent: meeting_invite
+        expected_entities:
+          - entity_type: person_name
+            value: "Alice"
+            required: true
+          - entity_type: person_name
+            value: "Bob"
+            required: true
+
+  # ============================================
+  # Location Entities
+  # ============================================
+
+  - test_id: hp-ee-011
+    name: Extract Room Name
+    description: Extract meeting room location
+    category: entity_extraction
+    priority: medium
+    tags:
+      - location
+      - room
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Book Conference Room A for the meeting"
+        expected_intent: room_book
+        expected_entities:
+          - entity_type: room
+            value: "Conference Room A"
+            required: true
+
+  - test_id: hp-ee-012
+    name: Extract Address
+    description: Extract physical address
+    category: entity_extraction
+    priority: medium
+    tags:
+      - location
+      - address
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Navigate to 123 Main Street"
+        expected_intent: navigation_start
+        expected_entities:
+          - entity_type: address
+            value_pattern: "123 Main Street"
+
+  # ============================================
+  # Category/Label Entities
+  # ============================================
+
+  - test_id: hp-ee-013
+    name: Extract Category
+    description: Extract category assignment
+    category: entity_extraction
+    priority: high
+    tags:
+      - category
+      - label
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Categorize this task as work"
+        expected_intent: task_categorize
+        expected_entities:
+          - entity_type: category
+            value: "work"
+            required: true
+
+  - test_id: hp-ee-014
+    name: Extract Priority Level
+    description: Extract priority assignment
+    category: entity_extraction
+    priority: high
+    tags:
+      - priority
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Mark this as urgent priority"
+        expected_intent: task_prioritize
+        expected_entities:
+          - entity_type: priority
+            value_pattern: "(urgent|high)"
+            required: true
+
+  - test_id: hp-ee-015
+    name: Extract Tags
+    description: Extract multiple tags
+    category: entity_extraction
+    priority: medium
+    tags:
+      - tags
+      - multiple
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Tag this with project-alpha and urgent"
+        expected_intent: task_tag
+        expected_entities:
+          - entity_type: tag
+            value: "project-alpha"
+          - entity_type: tag
+            value: "urgent"
+
+  # ============================================
+  # Email Entities
+  # ============================================
+
+  - test_id: hp-ee-016
+    name: Extract Email Address
+    description: Extract email from input
+    category: entity_extraction
+    priority: high
+    tags:
+      - email
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Send this to user@example.com"
+        expected_intent: email_send
+        expected_entities:
+          - entity_type: email
+            value: "user@example.com"
+            required: true
+
+  # ============================================
+  # Phone Number Entities
+  # ============================================
+
+  - test_id: hp-ee-017
+    name: Extract Phone Number
+    description: Extract phone number
+    category: entity_extraction
+    priority: medium
+    tags:
+      - phone
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Call 555-123-4567"
+        expected_intent: call_make
+        expected_entities:
+          - entity_type: phone_number
+            value_pattern: "555-?123-?4567"
+
+  # ============================================
+  # URL Entities
+  # ============================================
+
+  - test_id: hp-ee-018
+    name: Extract URL
+    description: Extract URL from input
+    category: entity_extraction
+    priority: medium
+    tags:
+      - url
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Open https://example.com"
+        expected_intent: url_open
+        expected_entities:
+          - entity_type: url
+            value: "https://example.com"
+
+  # ============================================
+  # Compound Entities
+  # ============================================
+
+  - test_id: hp-ee-019
+    name: Extract Multiple Entity Types
+    description: Extract date, time, and person in one input
+    category: entity_extraction
+    priority: high
+    tags:
+      - compound
+      - multiple-types
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule lunch with Sarah tomorrow at noon"
+        expected_intent: meeting_schedule
+        expected_entities:
+          - entity_type: event_type
+            value: "lunch"
+          - entity_type: person_name
+            value: "Sarah"
+          - entity_type: date
+            value: "tomorrow"
+          - entity_type: time
+            value_pattern: "noon|12:00"
+
+  - test_id: hp-ee-020
+    name: Complex Event Creation
+    description: Extract all components of complex event
+    category: entity_extraction
+    priority: critical
+    tags:
+      - compound
+      - event
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a high priority meeting with the dev team on Friday at 2pm in Room B for 1 hour"
+        expected_intent: meeting_create
+        expected_entities:
+          - entity_type: priority
+            value: "high"
+          - entity_type: event_type
+            value_pattern: "meeting"
+          - entity_type: attendees
+            value_pattern: "dev team"
+          - entity_type: date
+            value: "Friday"
+          - entity_type: time
+            value_pattern: "2\\s*pm"
+          - entity_type: location
+            value_pattern: "Room B"
+          - entity_type: duration
+            value_pattern: "1\\s*hour"

@@ -1,0 +1,477 @@
+# Multi-Turn Calendar & Scheduling Scenarios
+# Complex multi-turn conversations for calendar and scheduling
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: multi-turn-calendar-scheduling
+name: Multi-Turn Calendar Scheduling
+description: Complex multi-turn conversations for calendar and scheduling flows
+execution_order: sequential
+tags:
+  - multi-turn
+  - calendar
+  - scheduling
+
+tests:
+  # ============================================
+  # Meeting Scheduling Flow
+  # ============================================
+
+  - test_id: mt-cs-001
+    name: Complete Meeting Setup
+    description: Full meeting scheduling conversation
+    category: dialogue_flow
+    priority: critical
+    tags:
+      - meeting
+      - scheduling
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I need to schedule a meeting"
+        expected_intent: meeting_schedule
+      - turn_number: 2
+        role: assistant
+        input: "I can help schedule a meeting. When would you like it?"
+      - turn_number: 3
+        role: user
+        input: "Tomorrow afternoon"
+        expected_entities:
+          - entity_type: date
+            value: "tomorrow"
+          - entity_type: time_period
+            value: "afternoon"
+      - turn_number: 4
+        role: assistant
+        input: "Tomorrow afternoon. What time works best - 1pm, 2pm, or 3pm?"
+      - turn_number: 5
+        role: user
+        input: "2pm"
+        expected_entities:
+          - entity_type: time
+            value_pattern: "2.*pm"
+      - turn_number: 6
+        role: assistant
+        input: "2pm tomorrow. Who should I invite?"
+      - turn_number: 7
+        role: user
+        input: "The marketing team - Sarah, Mike, and Lisa"
+        expected_entities:
+          - entity_type: attendees
+            value_pattern: "Sarah.*Mike.*Lisa"
+      - turn_number: 8
+        role: assistant
+        input: "Got it. What's the meeting about?"
+      - turn_number: 9
+        role: user
+        input: "Q4 campaign planning"
+        expected_entities:
+          - entity_type: meeting_title
+            value_pattern: "Q4 campaign"
+      - turn_number: 10
+        role: assistant
+        input: "How long should the meeting be?"
+      - turn_number: 11
+        role: user
+        input: "1 hour"
+        expected_entities:
+          - entity_type: duration
+            value_pattern: "1 hour"
+      - turn_number: 12
+        role: assistant
+        input: "Should I book a conference room?"
+      - turn_number: 13
+        role: user
+        input: "Yes, the big one on floor 3"
+        expected_intent: confirmation_yes
+        expected_entities:
+          - entity_type: room
+            value_pattern: "floor 3"
+        assertions:
+          - assertion_id: meeting-confirmed
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(scheduled|booked|confirmed)"
+
+  # ============================================
+  # Rescheduling Flow
+  # ============================================
+
+  - test_id: mt-cs-002
+    name: Meeting Rescheduling
+    description: Reschedule existing meeting
+    category: dialogue_flow
+    priority: high
+    tags:
+      - reschedule
+      - conflict
+    setup:
+      initial_context:
+        meetings:
+          - id: 1
+            title: "Team standup"
+            time: "Monday 9am"
+          - id: 2
+            title: "1:1 with manager"
+            time: "Monday 2pm"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I need to move my Monday meetings"
+        expected_intent: meeting_reschedule
+      - turn_number: 2
+        role: assistant
+        input: "You have 2 meetings Monday:\n- Team standup at 9am\n- 1:1 with manager at 2pm\nWhich one?"
+      - turn_number: 3
+        role: user
+        input: "The standup"
+        expected_entities:
+          - entity_type: meeting_reference
+            value_pattern: "standup"
+      - turn_number: 4
+        role: assistant
+        input: "When would you like to reschedule the team standup?"
+      - turn_number: 5
+        role: user
+        input: "Can we do Tuesday same time?"
+        expected_entities:
+          - entity_type: date
+            value: "Tuesday"
+          - entity_type: time
+            value_pattern: "same time|9.*am"
+      - turn_number: 6
+        role: assistant
+        input: "Tuesday at 9am is available. Shall I move it?"
+      - turn_number: 7
+        role: user
+        input: "Yes please"
+        expected_intent: confirmation_yes
+        assertions:
+          - assertion_id: rescheduled
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(moved|rescheduled|updated)"
+
+  # ============================================
+  # Availability Check Flow
+  # ============================================
+
+  - test_id: mt-cs-003
+    name: Check and Book Availability
+    description: Check availability before booking
+    category: dialogue_flow
+    priority: high
+    tags:
+      - availability
+      - check
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Am I free tomorrow afternoon?"
+        expected_intent: availability_check
+        expected_entities:
+          - entity_type: date
+            value: "tomorrow"
+          - entity_type: time_period
+            value: "afternoon"
+      - turn_number: 2
+        role: assistant
+        input: "Tomorrow afternoon you have:\n- 1pm-2pm: Lunch with client\n- 3pm-3:30pm: Quick sync\n\nYou're free 2pm-3pm and after 3:30pm."
+      - turn_number: 3
+        role: user
+        input: "Great, book 2 to 3 for focus time"
+        expected_intent: time_block
+        expected_entities:
+          - entity_type: time_start
+            value_pattern: "2.*pm"
+          - entity_type: time_end
+            value_pattern: "3.*pm"
+          - entity_type: block_type
+            value: "focus time"
+      - turn_number: 4
+        role: assistant
+        input: "Blocked 2pm-3pm tomorrow for focus time."
+      - turn_number: 5
+        role: user
+        input: "What does my day look like now?"
+        expected_intent: calendar_view
+        assertions:
+          - assertion_id: shows-full-day
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(lunch|sync|focus)"
+
+  # ============================================
+  # Recurring Meeting Setup
+  # ============================================
+
+  - test_id: mt-cs-004
+    name: Setup Recurring Meeting
+    description: Create recurring meeting with options
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - recurring
+      - setup
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a weekly team standup"
+        expected_intent: meeting_create
+        expected_entities:
+          - entity_type: recurrence
+            value: "weekly"
+          - entity_type: meeting_type
+            value: "standup"
+      - turn_number: 2
+        role: assistant
+        input: "I'll set up a weekly team standup. What day and time?"
+      - turn_number: 3
+        role: user
+        input: "Every Monday at 9am"
+        expected_entities:
+          - entity_type: day
+            value: "Monday"
+          - entity_type: time
+            value_pattern: "9.*am"
+      - turn_number: 4
+        role: assistant
+        input: "For how long? And when should it end?"
+      - turn_number: 5
+        role: user
+        input: "30 minutes, and run it for 3 months"
+        expected_entities:
+          - entity_type: duration
+            value_pattern: "30 min"
+          - entity_type: end_date
+            value_pattern: "3 months"
+      - turn_number: 6
+        role: assistant
+        input: "Who should be invited?"
+      - turn_number: 7
+        role: user
+        input: "The whole engineering team"
+        expected_entities:
+          - entity_type: attendees
+            value_pattern: "engineering team"
+        assertions:
+          - assertion_id: recurring-created
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(created|weekly|recurring)"
+
+  # ============================================
+  # Conflict Resolution
+  # ============================================
+
+  - test_id: mt-cs-005
+    name: Handle Scheduling Conflict
+    description: Resolve meeting conflict interactively
+    category: dialogue_flow
+    priority: high
+    tags:
+      - conflict
+      - resolution
+    setup:
+      initial_context:
+        meetings:
+          - title: "Budget review"
+            time: "Wednesday 2pm"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule call with vendor Wednesday at 2pm"
+        expected_intent: meeting_schedule
+      - turn_number: 2
+        role: assistant
+        input: "You already have 'Budget review' at 2pm Wednesday. Would you like to:\n1. Reschedule the vendor call\n2. Reschedule budget review\n3. Double book"
+      - turn_number: 3
+        role: user
+        input: "Let's move the budget review"
+        expected_intent: meeting_reschedule
+        expected_entities:
+          - entity_type: meeting_reference
+            value_pattern: "budget"
+      - turn_number: 4
+        role: assistant
+        input: "When should I move budget review to?"
+      - turn_number: 5
+        role: user
+        input: "Thursday same time"
+        expected_entities:
+          - entity_type: date
+            value: "Thursday"
+      - turn_number: 6
+        role: assistant
+        input: "Budget review moved to Thursday 2pm. Vendor call scheduled for Wednesday 2pm."
+      - turn_number: 7
+        role: user
+        input: "Perfect, confirm both"
+        expected_intent: confirmation_yes
+        assertions:
+          - assertion_id: both-confirmed
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(confirmed|scheduled|both)"
+
+  # ============================================
+  # Calendar View Navigation
+  # ============================================
+
+  - test_id: mt-cs-006
+    name: Navigate Calendar Views
+    description: Navigate between different calendar views
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - navigation
+      - views
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show me this week's calendar"
+        expected_intent: calendar_view
+        expected_entities:
+          - entity_type: time_range
+            value: "this week"
+      - turn_number: 2
+        role: assistant
+        input: "This week:\nMon: 2 meetings\nTue: 3 meetings\nWed: 1 meeting\nThu: 4 meetings\nFri: 2 meetings"
+      - turn_number: 3
+        role: user
+        input: "Show me Thursday's details"
+        expected_intent: calendar_view
+        expected_entities:
+          - entity_type: date
+            value: "Thursday"
+      - turn_number: 4
+        role: assistant
+        input: "Thursday:\n- 9am: Team standup\n- 11am: Client call\n- 2pm: Project review\n- 4pm: 1:1 with Sarah"
+      - turn_number: 5
+        role: user
+        input: "What about next week?"
+        expected_intent: calendar_view
+        expected_entities:
+          - entity_type: time_range
+            value: "next week"
+      - turn_number: 6
+        role: assistant
+        input: "Next week:\nMon: 3 meetings\n..."
+      - turn_number: 7
+        role: user
+        input: "Go back to today"
+        expected_intent: calendar_view
+        expected_entities:
+          - entity_type: date
+            value: "today"
+        assertions:
+          - assertion_id: shows-today
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(today|current)"
+
+  # ============================================
+  # Multi-Person Scheduling
+  # ============================================
+
+  - test_id: mt-cs-007
+    name: Find Common Availability
+    description: Find time that works for multiple people
+    category: dialogue_flow
+    priority: high
+    tags:
+      - group
+      - availability
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I need to find a time that works for me, Sarah, and Mike next week"
+        expected_intent: availability_find
+        expected_entities:
+          - entity_type: attendees
+            value_pattern: "Sarah.*Mike"
+          - entity_type: time_range
+            value: "next week"
+      - turn_number: 2
+        role: assistant
+        input: "Checking availability for you, Sarah, and Mike next week...\n\nAvailable slots:\n- Monday 2pm-3pm\n- Wednesday 10am-11am\n- Thursday 3pm-4pm"
+      - turn_number: 3
+        role: user
+        input: "Wednesday works best"
+        expected_entities:
+          - entity_type: date
+            value: "Wednesday"
+      - turn_number: 4
+        role: assistant
+        input: "Shall I create a meeting for Wednesday 10am-11am with you, Sarah, and Mike?"
+      - turn_number: 5
+        role: user
+        input: "Yes, call it project kickoff"
+        expected_intent: confirmation_yes
+        expected_entities:
+          - entity_type: meeting_title
+            value: "project kickoff"
+        assertions:
+          - assertion_id: meeting-created
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(scheduled|created|kickoff)"
+
+  # ============================================
+  # Meeting Cancellation Flow
+  # ============================================
+
+  - test_id: mt-cs-008
+    name: Cancel Meeting with Notification
+    description: Cancel meeting and notify attendees
+    category: dialogue_flow
+    priority: high
+    tags:
+      - cancel
+      - notification
+    setup:
+      initial_context:
+        meeting:
+          title: "Strategy session"
+          attendees: ["Alice", "Bob", "Carol"]
+          time: "Friday 2pm"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I need to cancel the strategy session on Friday"
+        expected_intent: meeting_cancel
+        expected_entities:
+          - entity_type: meeting_reference
+            value: "strategy session"
+      - turn_number: 2
+        role: assistant
+        input: "Cancel 'Strategy session' Friday at 2pm? This will notify Alice, Bob, and Carol."
+      - turn_number: 3
+        role: user
+        input: "Yes, and tell them we'll reschedule next week"
+        expected_intent: confirmation_yes
+        expected_entities:
+          - entity_type: message
+            value_pattern: "reschedule next week"
+      - turn_number: 4
+        role: assistant
+        input: "Cancelled. Notifications sent with reschedule message."
+      - turn_number: 5
+        role: user
+        input: "Can you suggest some times for next week?"
+        expected_intent: availability_suggest
+        assertions:
+          - assertion_id: suggests-times
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(available|Monday|Tuesday|Wednesday)"
+

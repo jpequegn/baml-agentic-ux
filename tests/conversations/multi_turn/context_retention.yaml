@@ -1,0 +1,495 @@
+# Multi-Turn Context Retention Scenarios
+# Tests for context retention across conversation turns
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: multi-turn-context-retention
+name: Multi-Turn Context Retention
+description: Tests for maintaining and using context across turns
+execution_order: sequential
+tags:
+  - multi-turn
+  - context
+  - memory
+
+tests:
+  # ============================================
+  # Pronoun Resolution
+  # ============================================
+
+  - test_id: mt-cr-001
+    name: Simple Pronoun Reference
+    description: Resolve 'it' to previously mentioned item
+    category: context_retention
+    priority: critical
+    tags:
+      - pronoun
+      - reference
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task called buy groceries"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value: "buy groceries"
+      - turn_number: 2
+        role: assistant
+        input: "Created task 'buy groceries'."
+      - turn_number: 3
+        role: user
+        input: "Set it to high priority"
+        expected_intent: task_update
+        context_requirements:
+          - key: last_mentioned_task
+            match_type: exists
+        assertions:
+          - assertion_id: resolves-pronoun
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(groceries|high priority|updated)"
+
+  - test_id: mt-cr-002
+    name: Multiple Entity Pronouns
+    description: Resolve pronouns with multiple entities
+    category: context_retention
+    priority: high
+    tags:
+      - pronoun
+      - multiple
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task A and task B"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "Created tasks 'A' and 'B'."
+      - turn_number: 3
+        role: user
+        input: "Delete the first one"
+        expected_intent: task_delete
+        expected_entities:
+          - entity_type: ordinal_reference
+            value: "first"
+        assertions:
+          - assertion_id: resolves-ordinal
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task A|first|deleted)"
+
+  - test_id: mt-cr-003
+    name: Them/Those Resolution
+    description: Resolve plural pronouns
+    category: context_retention
+    priority: high
+    tags:
+      - pronoun
+      - plural
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show my high priority tasks"
+        expected_intent: task_list
+      - turn_number: 2
+        role: assistant
+        input: "High priority tasks:\n1. Urgent report\n2. Client call"
+      - turn_number: 3
+        role: user
+        input: "Mark them all as complete"
+        expected_intent: task_bulk_complete
+        context_requirements:
+          - key: listed_tasks
+            match_type: exists
+        assertions:
+          - assertion_id: resolves-them
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(2|both|completed|all)"
+
+  # ============================================
+  # Contextual Defaults
+  # ============================================
+
+  - test_id: mt-cr-004
+    name: Use Previous Values as Default
+    description: Reuse previously provided values
+    category: context_retention
+    priority: high
+    tags:
+      - default
+      - reuse
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule meeting tomorrow at 2pm with John"
+        expected_intent: meeting_schedule
+        expected_entities:
+          - entity_type: date
+            value: "tomorrow"
+          - entity_type: time
+            value_pattern: "2.*pm"
+          - entity_type: attendee
+            value: "John"
+      - turn_number: 2
+        role: assistant
+        input: "Scheduled meeting tomorrow at 2pm with John."
+      - turn_number: 3
+        role: user
+        input: "Schedule another one with Sarah"
+        expected_intent: meeting_schedule
+        expected_entities:
+          - entity_type: attendee
+            value: "Sarah"
+        context_requirements:
+          - key: last_date
+            match_type: exists
+        assertions:
+          - assertion_id: uses-previous-time
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(tomorrow|2.*pm|Sarah)"
+
+  - test_id: mt-cr-005
+    name: Category Context Persistence
+    description: Maintain category context across operations
+    category: context_retention
+    priority: medium
+    tags:
+      - category
+      - persistent
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Let's work on my work tasks"
+        expected_intent: category_focus
+        expected_entities:
+          - entity_type: category
+            value: "work"
+      - turn_number: 2
+        role: assistant
+        input: "Focused on work tasks. What would you like to do?"
+      - turn_number: 3
+        role: user
+        input: "Create task: review proposal"
+        expected_intent: task_create
+        context_requirements:
+          - key: active_category
+            value_match: "work"
+      - turn_number: 4
+        role: assistant
+        input: "Created work task 'review proposal'."
+      - turn_number: 5
+        role: user
+        input: "Create another: budget planning"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: maintains-category
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(work|task|created)"
+
+  # ============================================
+  # Conversation State
+  # ============================================
+
+  - test_id: mt-cr-006
+    name: Remember Incomplete Action
+    description: Resume incomplete action after interruption
+    category: context_retention
+    priority: high
+    tags:
+      - state
+      - resume
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "What should I call the task?"
+      - turn_number: 3
+        role: user
+        input: "Wait, what meetings do I have today?"
+        expected_intent: calendar_view
+      - turn_number: 4
+        role: assistant
+        input: "Today's meetings:\n- 10am Team standup"
+      - turn_number: 5
+        role: user
+        input: "Ok, back to the task - call it review notes"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value: "review notes"
+        context_requirements:
+          - key: pending_task_creation
+            match_type: exists
+        assertions:
+          - assertion_id: resumes-creation
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(created|task|review notes)"
+
+  - test_id: mt-cr-007
+    name: Remember User Preferences
+    description: Remember stated preferences
+    category: context_retention
+    priority: medium
+    tags:
+      - preferences
+      - memory
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Always make my meetings 30 minutes by default"
+        expected_intent: preference_set
+        expected_entities:
+          - entity_type: default_duration
+            value_pattern: "30 min"
+      - turn_number: 2
+        role: assistant
+        input: "Got it, I'll default meetings to 30 minutes."
+      - turn_number: 3
+        role: user
+        input: "Schedule meeting with Alice tomorrow at 3pm"
+        expected_intent: meeting_schedule
+      - turn_number: 4
+        role: assistant
+        input: "Scheduled 30-minute meeting with Alice tomorrow at 3pm."
+        assertions:
+          - assertion_id: applies-preference
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(30.*min|scheduled)"
+
+  # ============================================
+  # Information Accumulation
+  # ============================================
+
+  - test_id: mt-cr-008
+    name: Accumulate Task Details
+    description: Build up task details over multiple turns
+    category: context_retention
+    priority: high
+    tags:
+      - accumulation
+      - details
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I need to create a complex task"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "Sure, what's the task name?"
+      - turn_number: 3
+        role: user
+        input: "Project milestone review"
+        expected_entities:
+          - entity_type: task_name
+            value: "Project milestone review"
+      - turn_number: 4
+        role: assistant
+        input: "Got it. What priority?"
+      - turn_number: 5
+        role: user
+        input: "High"
+        expected_entities:
+          - entity_type: priority
+            value: "high"
+      - turn_number: 6
+        role: assistant
+        input: "High priority. Due date?"
+      - turn_number: 7
+        role: user
+        input: "End of this week"
+        expected_entities:
+          - entity_type: due_date
+            value_pattern: "end of.*week"
+      - turn_number: 8
+        role: assistant
+        input: "Any tags or categories?"
+      - turn_number: 9
+        role: user
+        input: "Tag it as Q4 and work"
+        expected_entities:
+          - entity_type: tags
+            value_pattern: "Q4|work"
+      - turn_number: 10
+        role: assistant
+        input: "Created: Project milestone review\nPriority: High\nDue: Friday\nTags: Q4, work"
+        assertions:
+          - assertion_id: all-details-present
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)milestone.*high.*Friday.*Q4"
+
+  # ============================================
+  # Context Correction
+  # ============================================
+
+  - test_id: mt-cr-009
+    name: Correct Earlier Information
+    description: Update previously provided information
+    category: context_retention
+    priority: high
+    tags:
+      - correction
+      - update
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: call John tomorrow"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "call John"
+          - entity_type: due_date
+            value: "tomorrow"
+      - turn_number: 2
+        role: assistant
+        input: "Created task 'call John' due tomorrow."
+      - turn_number: 3
+        role: user
+        input: "Wait, I meant call James, not John"
+        expected_intent: task_update
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "call James"
+      - turn_number: 4
+        role: assistant
+        input: "Updated task to 'call James'."
+      - turn_number: 5
+        role: user
+        input: "And actually make it day after tomorrow"
+        expected_intent: task_update
+        expected_entities:
+          - entity_type: due_date
+            value_pattern: "day after tomorrow"
+        assertions:
+          - assertion_id: both-corrections-applied
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(updated|James|day after)"
+
+  - test_id: mt-cr-010
+    name: Undo Last Action
+    description: Undo the most recent action
+    category: context_retention
+    priority: medium
+    tags:
+      - undo
+      - memory
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Mark task 'buy milk' as complete"
+        expected_intent: task_complete
+      - turn_number: 2
+        role: assistant
+        input: "Marked 'buy milk' as complete."
+      - turn_number: 3
+        role: user
+        input: "Undo that"
+        expected_intent: undo
+        context_requirements:
+          - key: last_action
+            match_type: exists
+        assertions:
+          - assertion_id: undoes-completion
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(undone|reverted|incomplete|restored)"
+
+  # ============================================
+  # Long Conversation Memory
+  # ============================================
+
+  - test_id: mt-cr-011
+    name: Reference Early Conversation
+    description: Reference something from early in conversation
+    category: context_retention
+    priority: medium
+    tags:
+      - long-term
+      - memory
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: prepare presentation"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "Created task 'prepare presentation'."
+      - turn_number: 3
+        role: user
+        input: "Show my calendar for tomorrow"
+        expected_intent: calendar_view
+      - turn_number: 4
+        role: assistant
+        input: "Tomorrow: 9am meeting, 2pm call"
+      - turn_number: 5
+        role: user
+        input: "Create task: review budget"
+        expected_intent: task_create
+      - turn_number: 6
+        role: assistant
+        input: "Created task 'review budget'."
+      - turn_number: 7
+        role: user
+        input: "What tasks have we created in this conversation?"
+        expected_intent: conversation_recall
+        assertions:
+          - assertion_id: recalls-all-tasks
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(presentation|budget|2|created)"
+
+  # ============================================
+  # Cross-Domain Context
+  # ============================================
+
+  - test_id: mt-cr-012
+    name: Link Across Domains
+    description: Connect information across task and calendar
+    category: context_retention
+    priority: medium
+    tags:
+      - cross-domain
+      - linking
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I have a client meeting tomorrow at 2pm"
+        expected_intent: meeting_info
+      - turn_number: 2
+        role: assistant
+        input: "I see the client meeting tomorrow at 2pm."
+      - turn_number: 3
+        role: user
+        input: "Create a prep task for it"
+        expected_intent: task_create
+        context_requirements:
+          - key: referenced_meeting
+            match_type: exists
+        assertions:
+          - assertion_id: links-to-meeting
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(client meeting|prep|tomorrow|task)"
+

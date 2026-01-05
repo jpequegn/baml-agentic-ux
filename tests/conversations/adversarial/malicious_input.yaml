@@ -1,0 +1,399 @@
+# Malicious Input Tests
+# Test cases for handling malicious input patterns
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: adversarial-malicious-input
+name: Malicious Input Tests
+description: Tests for handling potentially malicious input patterns
+execution_order: sequential
+tags:
+  - adversarial
+  - security
+  - malicious
+
+tests:
+  # ============================================
+  # SQL Injection Patterns
+  # ============================================
+
+  - test_id: adv-mi-001
+    name: Basic SQL Injection
+    description: Handle SQL injection attempt in input
+    category: security
+    priority: critical
+    tags:
+      - sql
+      - injection
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task'; DROP TABLE tasks;--"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: sanitizes-sql
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "DROP"
+            severity: critical
+          - assertion_id: safe-response
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|created|name)"
+
+  - test_id: adv-mi-002
+    name: SQL Union Attack
+    description: Handle UNION-based SQL injection
+    category: security
+    priority: high
+    tags:
+      - sql
+      - union
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show task 1 UNION SELECT * FROM users"
+        expected_intent: task_show
+        assertions:
+          - assertion_id: no-union-execution
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "UNION"
+            severity: high
+
+  - test_id: adv-mi-003
+    name: SQL Comment Injection
+    description: Handle SQL comment injection
+    category: security
+    priority: high
+    tags:
+      - sql
+      - comment
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Delete task where id=1 OR 1=1/*"
+        expected_intent: task_delete
+        assertions:
+          - assertion_id: no-wildcard-delete
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(which|specific|task|confirm)"
+
+  # ============================================
+  # XSS Patterns
+  # ============================================
+
+  - test_id: adv-mi-004
+    name: Script Tag XSS
+    description: Handle script tag injection
+    category: security
+    priority: critical
+    tags:
+      - xss
+      - script
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task <script>alert('xss')</script>"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: sanitizes-script
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "<script>"
+            severity: critical
+
+  - test_id: adv-mi-005
+    name: Event Handler XSS
+    description: Handle event handler injection
+    category: security
+    priority: high
+    tags:
+      - xss
+      - event
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task <img onerror=alert('xss')>"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: sanitizes-events
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "onerror"
+            severity: high
+
+  - test_id: adv-mi-006
+    name: JavaScript URL XSS
+    description: Handle javascript: URL injection
+    category: security
+    priority: high
+    tags:
+      - xss
+      - javascript
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Add link javascript:alert('xss')"
+        expected_intent: link_add
+        assertions:
+          - assertion_id: no-js-url
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "javascript:"
+            severity: high
+
+  # ============================================
+  # Command Injection
+  # ============================================
+
+  - test_id: adv-mi-007
+    name: Shell Command Injection
+    description: Handle shell command injection
+    category: security
+    priority: critical
+    tags:
+      - command
+      - shell
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task; rm -rf /"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: no-shell-execution
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "rm -rf"
+            severity: critical
+
+  - test_id: adv-mi-008
+    name: Pipe Command Injection
+    description: Handle pipe command injection
+    category: security
+    priority: high
+    tags:
+      - command
+      - pipe
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Export tasks | cat /etc/passwd"
+        expected_intent: task_export
+        assertions:
+          - assertion_id: no-pipe-execution
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "/etc/passwd"
+
+  - test_id: adv-mi-009
+    name: Backtick Command Injection
+    description: Handle backtick command injection
+    category: security
+    priority: high
+    tags:
+      - command
+      - backtick
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task `whoami`"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: no-backtick-execution
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|created|name)"
+
+  # ============================================
+  # Path Traversal
+  # ============================================
+
+  - test_id: adv-mi-010
+    name: Path Traversal Attempt
+    description: Handle path traversal attack
+    category: security
+    priority: high
+    tags:
+      - path
+      - traversal
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Open file ../../../etc/passwd"
+        expected_intent: file_open
+        assertions:
+          - assertion_id: no-path-traversal
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "/etc/"
+            severity: high
+          - assertion_id: safe-handling
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(can't|unable|invalid|file)"
+
+  - test_id: adv-mi-011
+    name: Encoded Path Traversal
+    description: Handle encoded path traversal
+    category: security
+    priority: medium
+    tags:
+      - path
+      - encoded
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Load %2e%2e%2f%2e%2e%2fetc%2fpasswd"
+        expected_intent: unknown
+        assertions:
+          - assertion_id: no-encoded-traversal
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(understand|help|can't)"
+
+  # ============================================
+  # Buffer/Resource Attacks
+  # ============================================
+
+  - test_id: adv-mi-012
+    name: Excessive Repetition
+    description: Handle potential buffer overflow
+    category: security
+    priority: medium
+    tags:
+      - buffer
+      - dos
+    turns:
+      - turn_number: 1
+        role: user
+        input: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        expected_intent: unknown
+        assertions:
+          - assertion_id: handles-long-input
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(help|understand|didn't)"
+
+  - test_id: adv-mi-013
+    name: Nested Structure Attack
+    description: Handle deeply nested structure
+    category: security
+    priority: medium
+    tags:
+      - nested
+      - dos
+    turns:
+      - turn_number: 1
+        role: user
+        input: "((((((((((((((((((((task))))))))))))))))))))"
+        expected_intent: unknown
+        assertions:
+          - assertion_id: handles-nesting
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(help|understand)"
+
+  # ============================================
+  # Format String Attacks
+  # ============================================
+
+  - test_id: adv-mi-014
+    name: Format String Injection
+    description: Handle format string attack
+    category: security
+    priority: medium
+    tags:
+      - format-string
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task %s%s%s%s%s%n"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: no-format-execution
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "%n"
+
+  - test_id: adv-mi-015
+    name: Printf Style Attack
+    description: Handle printf-style injection
+    category: security
+    priority: low
+    tags:
+      - format-string
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Name is ${USER} home is ${HOME}"
+        expected_intent: unknown
+        assertions:
+          - assertion_id: no-variable-expansion
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(help|understand|name)"
+
+  # ============================================
+  # LDAP/XML Injection
+  # ============================================
+
+  - test_id: adv-mi-016
+    name: LDAP Injection
+    description: Handle LDAP injection attempt
+    category: security
+    priority: low
+    tags:
+      - ldap
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Find user *)(&(objectClass=*)"
+        expected_intent: user_search
+        assertions:
+          - assertion_id: safe-search
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(user|search|find|help)"
+
+  - test_id: adv-mi-017
+    name: XML External Entity
+    description: Handle XXE attempt
+    category: security
+    priority: medium
+    tags:
+      - xml
+      - xxe
+    turns:
+      - turn_number: 1
+        role: user
+        input: "<!DOCTYPE foo [<!ENTITY xxe SYSTEM 'file:///etc/passwd'>]><task>&xxe;</task>"
+        expected_intent: unknown
+        assertions:
+          - assertion_id: no-xxe-processing
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "ENTITY"
+            severity: high
+

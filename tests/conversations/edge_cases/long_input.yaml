@@ -1,0 +1,239 @@
+# Long Input Tests
+# Test cases for handling very long user inputs
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: edge-case-long-input
+name: Long Input Tests
+description: Tests for handling very long user inputs gracefully
+execution_order: sequential
+tags:
+  - edge-case
+  - long-input
+
+tests:
+  # ============================================
+  # Moderately Long Input
+  # ============================================
+
+  - test_id: ec-li-001
+    name: Long Task Description
+    description: Handle task with long description
+    category: intent_recognition
+    priority: high
+    tags:
+      - task
+      - long
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task called complete the quarterly financial report which includes all expense summaries, revenue projections, budget variances, and department-wise breakdowns for presentation to the executive team next Friday"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "quarterly financial report"
+        assertions:
+          - assertion_id: handles-long-input
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|created|report)"
+
+  - test_id: ec-li-002
+    name: Multiple Sentences
+    description: Handle multi-sentence input
+    category: intent_recognition
+    priority: high
+    tags:
+      - multi-sentence
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I need to schedule a meeting. It should be tomorrow. Make sure to invite the whole team. We'll discuss the project status. Reserve the big conference room."
+        expected_intent: meeting_schedule
+        assertions:
+          - assertion_id: extracts-key-info
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(meeting|tomorrow|team)"
+
+  # ============================================
+  # Very Long Input
+  # ============================================
+
+  - test_id: ec-li-003
+    name: Paragraph-Length Input
+    description: Handle paragraph-length input
+    category: intent_recognition
+    priority: medium
+    tags:
+      - paragraph
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I've been thinking about organizing my work better and I realized that I have several pending tasks that need attention. First, there's the report that's due next week. Then I have to follow up with the client about the proposal we sent last month. Also, I should probably set up a meeting with my team to discuss our Q2 goals. Oh, and don't forget the expense reports from the business trip. Can you help me create tasks for all of these?"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: identifies-multiple-tasks
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|report|meeting|create)"
+
+  - test_id: ec-li-004
+    name: List of Items
+    description: Handle long list in input
+    category: intent_recognition
+    priority: medium
+    tags:
+      - list
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Add to my shopping list: milk, eggs, bread, butter, cheese, yogurt, apples, bananas, oranges, tomatoes, lettuce, cucumber, carrots, onions, garlic, chicken, beef, salmon, rice, pasta"
+        expected_intent: list_add
+        assertions:
+          - assertion_id: handles-list
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(add|list|items)"
+
+  # ============================================
+  # Extremely Long Input
+  # ============================================
+
+  - test_id: ec-li-005
+    name: 1000+ Character Input
+    description: Handle extremely long input
+    category: error_handling
+    priority: high
+    tags:
+      - extreme
+      - truncation
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Please create a task from this."
+        expected_intent: task_create
+        assertions:
+          - assertion_id: no-crash
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "error"
+            severity: critical
+          - assertion_id: extracts-intent
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|create|help)"
+
+  - test_id: ec-li-006
+    name: Repeated Text
+    description: Handle repeated text pattern
+    category: error_handling
+    priority: medium
+    tags:
+      - repeated
+    turns:
+      - turn_number: 1
+        role: user
+        input: "create task create task create task create task create task create task create task create task create task create task"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: handles-repetition
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|create)"
+
+  # ============================================
+  # Long with Embedded Commands
+  # ============================================
+
+  - test_id: ec-li-007
+    name: Intent Buried in Text
+    description: Find intent buried in long text
+    category: intent_recognition
+    priority: high
+    tags:
+      - buried
+      - extraction
+    turns:
+      - turn_number: 1
+        role: user
+        input: "So I was talking to my colleague yesterday about how we never seem to have enough time to get everything done, and she mentioned that she uses a task manager to keep track of things. I thought that was a great idea because I often forget what I need to do. Anyway, could you create a task to call the dentist? I keep forgetting to make that appointment."
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "call.*dentist"
+        assertions:
+          - assertion_id: finds-buried-intent
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(dentist|task|created)"
+
+  - test_id: ec-li-008
+    name: Multiple Intents in Long Text
+    description: Handle multiple intents in long input
+    category: intent_recognition
+    priority: medium
+    tags:
+      - multiple
+      - disambiguation
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I need to do several things today. First, I should create a task to finish the presentation. Then I want to set a reminder for 3pm about the call. Also, can you delete my old shopping list? And finally, show me all my meetings for tomorrow."
+        expected_intent: multi_intent
+        assertions:
+          - assertion_id: acknowledges-multiple
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|remind|meeting|multiple|first|let)"
+
+  # ============================================
+  # Long Entity Values
+  # ============================================
+
+  - test_id: ec-li-009
+    name: Long Task Name
+    description: Handle very long task name
+    category: entity_extraction
+    priority: medium
+    tags:
+      - entity
+      - long-name
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: Review and consolidate the Q3 marketing campaign performance metrics including social media engagement, email open rates, conversion funnel analysis, and ROI calculations for stakeholder presentation"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "Q3 marketing"
+
+  - test_id: ec-li-010
+    name: Long Description with Dates
+    description: Handle long input with multiple dates
+    category: entity_extraction
+    priority: medium
+    tags:
+      - entity
+      - dates
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule a series of meetings: kickoff on Monday January 15th, progress review on January 22nd, midpoint check on January 29th, and final presentation on February 5th, all at 2pm in Conference Room B"
+        expected_intent: meeting_schedule
+        expected_entities:
+          - entity_type: date
+            value_pattern: "January 15"
+          - entity_type: location
+            value_pattern: "Conference Room B"
+

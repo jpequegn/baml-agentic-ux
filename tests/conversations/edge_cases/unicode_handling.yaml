@@ -1,0 +1,359 @@
+# Unicode Handling Tests
+# Test cases for handling Unicode and internationalized input
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: edge-case-unicode-handling
+name: Unicode Handling Tests
+description: Tests for handling Unicode characters, emojis, and international text
+execution_order: sequential
+tags:
+  - edge-case
+  - unicode
+  - i18n
+
+tests:
+  # ============================================
+  # Emoji Handling
+  # ============================================
+
+  - test_id: ec-uh-001
+    name: Emoji in Task Name
+    description: Handle emoji in task name
+    category: entity_extraction
+    priority: high
+    tags:
+      - emoji
+      - task
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: Buy birthday cake 🎂"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "birthday cake"
+        assertions:
+          - assertion_id: handles-emoji
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|cake|created)"
+
+  - test_id: ec-uh-002
+    name: Emoji as Sentiment
+    description: Handle emoji expressing sentiment
+    category: intent_recognition
+    priority: medium
+    tags:
+      - emoji
+      - sentiment
+    turns:
+      - turn_number: 1
+        role: user
+        input: "😊 Show my completed tasks"
+        expected_intent: task_list
+        assertions:
+          - assertion_id: ignores-emoji-prefix
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|completed)"
+
+  - test_id: ec-uh-003
+    name: Emoji Only Input
+    description: Handle emoji-only input
+    category: error_handling
+    priority: medium
+    tags:
+      - emoji
+      - only
+    turns:
+      - turn_number: 1
+        role: user
+        input: "👍"
+        expected_intent: confirmation_yes
+        assertions:
+          - assertion_id: interprets-thumbs-up
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(yes|confirm|ok|proceed)"
+
+  - test_id: ec-uh-004
+    name: Thumbs Down Emoji
+    description: Handle negative emoji
+    category: error_handling
+    priority: medium
+    tags:
+      - emoji
+      - negative
+    turns:
+      - turn_number: 1
+        role: user
+        input: "👎"
+        expected_intent: confirmation_no
+        assertions:
+          - assertion_id: interprets-thumbs-down
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(no|cancel|stop)"
+
+  - test_id: ec-uh-005
+    name: Multiple Emojis
+    description: Handle multiple emojis in input
+    category: entity_extraction
+    priority: low
+    tags:
+      - emoji
+      - multiple
+    turns:
+      - turn_number: 1
+        role: user
+        input: "🚨 URGENT 🔥 Fix production bug 💻"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: priority
+            value_pattern: "[Uu]rgent"
+
+  # ============================================
+  # International Characters
+  # ============================================
+
+  - test_id: ec-uh-006
+    name: Accented Characters
+    description: Handle accented Latin characters
+    category: entity_extraction
+    priority: high
+    tags:
+      - accents
+      - latin
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule meeting with José at café downtown"
+        expected_intent: meeting_schedule
+        expected_entities:
+          - entity_type: person_name
+            value: "José"
+          - entity_type: location
+            value_pattern: "café"
+
+  - test_id: ec-uh-007
+    name: German Umlauts
+    description: Handle German umlauts
+    category: entity_extraction
+    priority: medium
+    tags:
+      - german
+      - umlaut
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: Review Müller report"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "Müller report"
+
+  - test_id: ec-uh-008
+    name: Nordic Characters
+    description: Handle Nordic special characters
+    category: entity_extraction
+    priority: medium
+    tags:
+      - nordic
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule call with Bjørn at 3pm"
+        expected_intent: call_schedule
+        expected_entities:
+          - entity_type: person_name
+            value: "Bjørn"
+
+  # ============================================
+  # Non-Latin Scripts
+  # ============================================
+
+  - test_id: ec-uh-009
+    name: Chinese Characters
+    description: Handle Chinese input
+    category: intent_recognition
+    priority: medium
+    tags:
+      - chinese
+      - cjk
+    turns:
+      - turn_number: 1
+        role: user
+        input: "创建任务 buy groceries"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: handles-mixed-script
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|groceries|create)"
+
+  - test_id: ec-uh-010
+    name: Japanese Characters
+    description: Handle Japanese mixed script
+    category: intent_recognition
+    priority: medium
+    tags:
+      - japanese
+      - cjk
+    turns:
+      - turn_number: 1
+        role: user
+        input: "タスクを作成: Buy milk"
+        expected_intent: task_create
+
+  - test_id: ec-uh-011
+    name: Arabic Text
+    description: Handle Arabic text (RTL)
+    category: intent_recognition
+    priority: low
+    tags:
+      - arabic
+      - rtl
+    turns:
+      - turn_number: 1
+        role: user
+        input: "مهمة create task"
+        expected_intent: task_create
+
+  - test_id: ec-uh-012
+    name: Cyrillic Characters
+    description: Handle Cyrillic input
+    category: entity_extraction
+    priority: low
+    tags:
+      - cyrillic
+      - russian
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule meeting with Иван"
+        expected_intent: meeting_schedule
+        expected_entities:
+          - entity_type: person_name
+            value: "Иван"
+
+  # ============================================
+  # Special Unicode Characters
+  # ============================================
+
+  - test_id: ec-uh-013
+    name: Zero-Width Characters
+    description: Handle zero-width characters
+    category: error_handling
+    priority: high
+    tags:
+      - zero-width
+      - invisible
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create​task"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: handles-invisible
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|create)"
+
+  - test_id: ec-uh-014
+    name: Unicode Symbols
+    description: Handle Unicode symbols
+    category: entity_extraction
+    priority: medium
+    tags:
+      - symbols
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: Review → Approve → Deploy"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "Review.*Deploy"
+
+  - test_id: ec-uh-015
+    name: Mathematical Symbols
+    description: Handle mathematical Unicode
+    category: entity_extraction
+    priority: low
+    tags:
+      - math
+      - symbols
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Calculate 2 × 3 ÷ 2"
+        expected_intent: calculation
+        assertions:
+          - assertion_id: understands-symbols
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(3|result|calculate)"
+
+  - test_id: ec-uh-016
+    name: Currency Symbols Various
+    description: Handle various currency symbols
+    category: entity_extraction
+    priority: medium
+    tags:
+      - currency
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Log expenses: £50, ¥1000, ₹500"
+        expected_intent: expense_add
+        expected_entities:
+          - entity_type: amount
+            value_pattern: "50"
+
+  # ============================================
+  # Edge Cases
+  # ============================================
+
+  - test_id: ec-uh-017
+    name: Combining Characters
+    description: Handle combining diacritical marks
+    category: error_handling
+    priority: medium
+    tags:
+      - combining
+      - diacritics
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task for café meeting"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: normalizes-text
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|meeting)"
+
+  - test_id: ec-uh-018
+    name: Emoji Modifiers
+    description: Handle emoji with skin tone modifiers
+    category: entity_extraction
+    priority: low
+    tags:
+      - emoji
+      - modifiers
+    turns:
+      - turn_number: 1
+        role: user
+        input: "👍🏽 Looks good, proceed"
+        expected_intent: confirmation_yes
+

@@ -1,0 +1,344 @@
+# Special Characters Tests
+# Test cases for handling special characters in input
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: edge-case-special-characters
+name: Special Characters Tests
+description: Tests for handling special characters and punctuation
+execution_order: sequential
+tags:
+  - edge-case
+  - special-characters
+
+tests:
+  # ============================================
+  # Punctuation
+  # ============================================
+
+  - test_id: ec-sc-001
+    name: Excessive Punctuation
+    description: Handle input with excessive punctuation
+    category: intent_recognition
+    priority: high
+    tags:
+      - punctuation
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task!!!"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: ignores-extra-punctuation
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|create)"
+
+  - test_id: ec-sc-002
+    name: Multiple Question Marks
+    description: Handle multiple question marks
+    category: intent_recognition
+    priority: medium
+    tags:
+      - punctuation
+      - question
+    turns:
+      - turn_number: 1
+        role: user
+        input: "What are my tasks???"
+        expected_intent: task_list
+        assertions:
+          - assertion_id: understands-question
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|list|here)"
+
+  - test_id: ec-sc-003
+    name: Interrobang
+    description: Handle interrobang (exclamation + question)
+    category: intent_recognition
+    priority: low
+    tags:
+      - punctuation
+    turns:
+      - turn_number: 1
+        role: user
+        input: "You deleted my task?!"
+        expected_intent: complaint
+        assertions:
+          - assertion_id: handles-emotion
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(sorry|didn't|restore|help)"
+
+  # ============================================
+  # Quotes and Brackets
+  # ============================================
+
+  - test_id: ec-sc-004
+    name: Single Quotes
+    description: Handle single quotes in input
+    category: entity_extraction
+    priority: high
+    tags:
+      - quotes
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task called 'Buy groceries'"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value: "Buy groceries"
+
+  - test_id: ec-sc-005
+    name: Double Quotes
+    description: Handle double quotes in input
+    category: entity_extraction
+    priority: high
+    tags:
+      - quotes
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task called \"Meeting prep\""
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value: "Meeting prep"
+
+  - test_id: ec-sc-006
+    name: Unmatched Quotes
+    description: Handle unmatched quote
+    category: error_handling
+    priority: medium
+    tags:
+      - quotes
+      - malformed
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task called \"Finish report"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "Finish report"
+
+  - test_id: ec-sc-007
+    name: Parentheses
+    description: Handle parentheses in input
+    category: entity_extraction
+    priority: medium
+    tags:
+      - brackets
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: Review document (draft version)"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "Review document.*draft"
+
+  - test_id: ec-sc-008
+    name: Square Brackets
+    description: Handle square brackets
+    category: entity_extraction
+    priority: low
+    tags:
+      - brackets
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task [URGENT] Fix bug"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: priority
+            value_pattern: "[Uu]rgent"
+
+  # ============================================
+  # Symbols
+  # ============================================
+
+  - test_id: ec-sc-009
+    name: Ampersand
+    description: Handle ampersand in input
+    category: entity_extraction
+    priority: medium
+    tags:
+      - symbol
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule meeting with R&D team"
+        expected_intent: meeting_schedule
+        expected_entities:
+          - entity_type: attendees
+            value_pattern: "R&D"
+
+  - test_id: ec-sc-010
+    name: At Symbol
+    description: Handle @ symbol in text
+    category: entity_extraction
+    priority: high
+    tags:
+      - symbol
+      - mention
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task and assign to @john"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: assignee
+            value_pattern: "john"
+
+  - test_id: ec-sc-011
+    name: Hash Symbol
+    description: Handle # symbol for tags
+    category: entity_extraction
+    priority: medium
+    tags:
+      - symbol
+      - hashtag
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task #urgent #work Review proposal"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: tag
+            value_pattern: "urgent"
+
+  - test_id: ec-sc-012
+    name: Currency Symbols
+    description: Handle various currency symbols
+    category: entity_extraction
+    priority: high
+    tags:
+      - symbol
+      - currency
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Log expense of €50 for lunch"
+        expected_intent: expense_add
+        expected_entities:
+          - entity_type: amount
+            value_pattern: "50"
+          - entity_type: currency
+            value_pattern: "(EUR|€)"
+
+  - test_id: ec-sc-013
+    name: Percent Symbol
+    description: Handle percent symbol
+    category: entity_extraction
+    priority: medium
+    tags:
+      - symbol
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Update task to 50% complete"
+        expected_intent: task_update
+        expected_entities:
+          - entity_type: progress
+            value_pattern: "50%?"
+
+  # ============================================
+  # Escape Sequences
+  # ============================================
+
+  - test_id: ec-sc-014
+    name: Backslash
+    description: Handle backslash in input
+    category: error_handling
+    priority: medium
+    tags:
+      - escape
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: Check C:\\Users\\Documents folder"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "Check.*Documents"
+
+  - test_id: ec-sc-015
+    name: HTML-like Characters
+    description: Handle angle brackets
+    category: error_handling
+    priority: high
+    tags:
+      - html
+      - security
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task <script>alert('hi')</script>"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: sanitizes-input
+            assertion_type: response_pattern
+            target: response
+            operator: not_contains
+            expected_value: "<script>"
+            severity: critical
+
+  # ============================================
+  # Emoticons and Special Text
+  # ============================================
+
+  - test_id: ec-sc-016
+    name: Text Emoticons
+    description: Handle text emoticons
+    category: intent_recognition
+    priority: low
+    tags:
+      - emoticon
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task :) Buy birthday gift"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "birthday gift"
+
+  - test_id: ec-sc-017
+    name: All Caps Input
+    description: Handle all caps input
+    category: intent_recognition
+    priority: medium
+    tags:
+      - caps
+    turns:
+      - turn_number: 1
+        role: user
+        input: "CREATE A TASK NOW"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: case-insensitive
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|create)"
+
+  - test_id: ec-sc-018
+    name: Mixed Case (CamelCase)
+    description: Handle mixed case input
+    category: intent_recognition
+    priority: low
+    tags:
+      - case
+    turns:
+      - turn_number: 1
+        role: user
+        input: "createTask buyMilk"
+        expected_intent: task_create
+

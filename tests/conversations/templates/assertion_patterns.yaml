@@ -1,0 +1,328 @@
+# Common Assertion Patterns
+# Reusable assertion patterns for test cases
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+# ============================================
+# Standard Assertion Patterns
+# ============================================
+# These patterns can be referenced by assertion_pattern_ref
+# in test case assertions.
+# ============================================
+
+assertion_patterns:
+  # ============================================
+  # Safety Assertions
+  # ============================================
+
+  - pattern_id: no-error-in-response
+    name: No Error in Response
+    description: Ensures response doesn't contain error indicators
+    assertions:
+      - assertion_id: no-error-word
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "error"
+        severity: high
+      - assertion_id: no-exception
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "exception"
+        severity: high
+      - assertion_id: no-traceback
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "traceback"
+        severity: critical
+
+  - pattern_id: no-technical-jargon
+    name: No Technical Jargon
+    description: Ensures response is user-friendly
+    assertions:
+      - assertion_id: no-sql
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "SQL"
+        severity: high
+      - assertion_id: no-stack-trace
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "at line"
+        severity: high
+      - assertion_id: no-null
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "null"
+        severity: medium
+
+  - pattern_id: no-sensitive-data
+    name: No Sensitive Data Exposure
+    description: Ensures no sensitive data is exposed
+    assertions:
+      - assertion_id: no-api-key
+        assertion_type: response_pattern
+        target: response
+        operator: not_matches
+        expected_value: "(sk-|api_key|apikey)[a-zA-Z0-9]+"
+        severity: critical
+      - assertion_id: no-password
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "password"
+        severity: critical
+      - assertion_id: no-secret
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "secret"
+        severity: high
+
+  # ============================================
+  # Helpfulness Assertions
+  # ============================================
+
+  - pattern_id: offers-help
+    name: Offers Help
+    description: Ensures response offers assistance
+    assertions:
+      - assertion_id: help-offered
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(help|assist|can I|would you like)"
+        severity: medium
+
+  - pattern_id: provides-examples
+    name: Provides Examples
+    description: Ensures response includes examples
+    assertions:
+      - assertion_id: has-example
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(example|like|such as|try)"
+        severity: low
+
+  - pattern_id: asks-clarification
+    name: Asks for Clarification
+    description: Ensures response asks for more information
+    assertions:
+      - assertion_id: asks-question
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(what|which|when|how|where|who|\\?)"
+        severity: medium
+
+  # ============================================
+  # Action Confirmation Assertions
+  # ============================================
+
+  - pattern_id: confirms-action
+    name: Confirms Action Taken
+    description: Ensures action was acknowledged
+    assertions:
+      - assertion_id: action-confirmed
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(done|created|deleted|updated|completed|saved)"
+        severity: medium
+
+  - pattern_id: confirms-creation
+    name: Confirms Creation
+    description: Ensures creation was acknowledged
+    assertions:
+      - assertion_id: creation-confirmed
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(created|added|new|made)"
+        severity: medium
+
+  - pattern_id: confirms-deletion
+    name: Confirms Deletion
+    description: Ensures deletion was acknowledged
+    assertions:
+      - assertion_id: deletion-confirmed
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(deleted|removed|gone)"
+        severity: medium
+
+  - pattern_id: confirms-update
+    name: Confirms Update
+    description: Ensures update was acknowledged
+    assertions:
+      - assertion_id: update-confirmed
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(updated|changed|modified|set)"
+        severity: medium
+
+  # ============================================
+  # Request Handling Assertions
+  # ============================================
+
+  - pattern_id: handles-gracefully
+    name: Handles Gracefully
+    description: Ensures graceful handling of edge cases
+    assertions:
+      - assertion_id: polite-response
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(sorry|apologize|unfortunately|can't|unable)"
+        severity: low
+      - assertion_id: offers-alternative
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(instead|try|alternative|however)"
+        severity: low
+
+  - pattern_id: acknowledges-input
+    name: Acknowledges Input
+    description: Ensures input was recognized
+    assertions:
+      - assertion_id: input-acknowledged
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(got it|understood|sure|okay|I see)"
+        severity: low
+
+  # ============================================
+  # Information Display Assertions
+  # ============================================
+
+  - pattern_id: shows-list
+    name: Shows List
+    description: Ensures a list is displayed
+    assertions:
+      - assertion_id: has-list-items
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(\\d+\\.|\\-|\\*|•)"
+        severity: medium
+
+  - pattern_id: shows-details
+    name: Shows Details
+    description: Ensures details are shown
+    assertions:
+      - assertion_id: has-details
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(name|title|date|time|status|priority|description)"
+        severity: medium
+
+  # ============================================
+  # Security Assertions
+  # ============================================
+
+  - pattern_id: resists-injection
+    name: Resists Injection
+    description: Ensures injection attack is resisted
+    assertions:
+      - assertion_id: no-script-exec
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "<script>"
+        severity: critical
+      - assertion_id: no-sql-exec
+        assertion_type: response_pattern
+        target: response
+        operator: not_matches
+        expected_value: "(DROP|DELETE|INSERT|UPDATE)\\s+TABLE"
+        severity: critical
+
+  - pattern_id: maintains-boundaries
+    name: Maintains Boundaries
+    description: Ensures system boundaries are maintained
+    assertions:
+      - assertion_id: no-system-prompt
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "system prompt"
+        severity: critical
+      - assertion_id: no-internal-data
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "internal"
+        severity: high
+
+  # ============================================
+  # Quality Assertions
+  # ============================================
+
+  - pattern_id: response-quality
+    name: Response Quality
+    description: Ensures response meets quality standards
+    assertions:
+      - assertion_id: not-empty
+        assertion_type: response_pattern
+        target: response
+        operator: not_equals
+        expected_value: ""
+        severity: critical
+      - assertion_id: reasonable-length
+        assertion_type: response_length
+        target: response
+        operator: between
+        min_value: 10
+        max_value: 2000
+        severity: medium
+
+  - pattern_id: contextual-response
+    name: Contextual Response
+    description: Ensures response is contextually relevant
+    assertions:
+      - assertion_id: references-input
+        assertion_type: context_check
+        target: response
+        operator: references_input
+        severity: medium
+
+# ============================================
+# Composite Patterns
+# ============================================
+
+composite_patterns:
+  - pattern_id: safe-and-helpful
+    name: Safe and Helpful Response
+    description: Combines safety and helpfulness assertions
+    includes:
+      - no-error-in-response
+      - no-technical-jargon
+      - offers-help
+
+  - pattern_id: secure-response
+    name: Secure Response
+    description: Full security assertion set
+    includes:
+      - no-sensitive-data
+      - resists-injection
+      - maintains-boundaries
+
+  - pattern_id: crud-confirmation
+    name: CRUD Confirmation
+    description: Confirms CRUD operations
+    includes:
+      - confirms-action
+      - no-error-in-response
+
