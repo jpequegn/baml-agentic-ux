@@ -1,0 +1,453 @@
+# Boundary Testing
+# Test cases for testing system boundaries and limits
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: adversarial-boundary-testing
+name: Boundary Testing
+description: Tests for system boundaries, limits, and edge behaviors
+execution_order: sequential
+tags:
+  - adversarial
+  - boundary
+  - limits
+
+tests:
+  # ============================================
+  # Numeric Boundaries
+  # ============================================
+
+  - test_id: adv-bt-001
+    name: Maximum Integer Value
+    description: Handle maximum integer input
+    category: boundary
+    priority: high
+    tags:
+      - numeric
+      - max
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Set quantity to 9999999999999999999999"
+        expected_intent: quantity_set
+        assertions:
+          - assertion_id: handles-large-number
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(large|maximum|limit|invalid|number)"
+
+  - test_id: adv-bt-002
+    name: Negative Number
+    description: Handle unexpected negative number
+    category: boundary
+    priority: high
+    tags:
+      - numeric
+      - negative
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create -5 tasks"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: handles-negative
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(can't|invalid|positive|number)"
+
+  - test_id: adv-bt-003
+    name: Float Where Integer Expected
+    description: Handle float where integer expected
+    category: boundary
+    priority: medium
+    tags:
+      - numeric
+      - float
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show task 1.5"
+        expected_intent: task_show
+        assertions:
+          - assertion_id: handles-float
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|1|invalid)"
+
+  - test_id: adv-bt-004
+    name: Zero Value
+    description: Handle zero where not expected
+    category: boundary
+    priority: medium
+    tags:
+      - numeric
+      - zero
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Repeat 0 times"
+        expected_intent: repeat
+        assertions:
+          - assertion_id: handles-zero
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(zero|can't|at least)"
+
+  # ============================================
+  # Date/Time Boundaries
+  # ============================================
+
+  - test_id: adv-bt-005
+    name: Far Future Date
+    description: Handle date far in future
+    category: boundary
+    priority: medium
+    tags:
+      - date
+      - future
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule for January 1, 2099"
+        expected_intent: schedule_create
+        expected_entities:
+          - entity_type: date
+            value_pattern: "2099"
+        assertions:
+          - assertion_id: handles-future
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(schedule|2099|far|future)"
+
+  - test_id: adv-bt-006
+    name: Past Date
+    description: Handle date in the past
+    category: boundary
+    priority: high
+    tags:
+      - date
+      - past
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule meeting for January 1, 2020"
+        expected_intent: meeting_schedule
+        assertions:
+          - assertion_id: warns-past-date
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(past|already|happened|sure)"
+
+  - test_id: adv-bt-007
+    name: Invalid Date
+    description: Handle impossible date
+    category: boundary
+    priority: high
+    tags:
+      - date
+      - invalid
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule for February 30th"
+        expected_intent: schedule_create
+        assertions:
+          - assertion_id: catches-invalid-date
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(invalid|doesn't exist|valid date)"
+
+  - test_id: adv-bt-008
+    name: Invalid Time
+    description: Handle impossible time
+    category: boundary
+    priority: high
+    tags:
+      - time
+      - invalid
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Set alarm for 25:00"
+        expected_intent: alarm_set
+        assertions:
+          - assertion_id: catches-invalid-time
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(invalid|valid time|24)"
+
+  # ============================================
+  # String Length Boundaries
+  # ============================================
+
+  - test_id: adv-bt-009
+    name: Empty Name Field
+    description: Handle empty string where name required
+    category: boundary
+    priority: high
+    tags:
+      - string
+      - empty
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task named ''"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: requires-name
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(name|what|call|empty)"
+
+  - test_id: adv-bt-010
+    name: Single Character Name
+    description: Handle single character name
+    category: boundary
+    priority: medium
+    tags:
+      - string
+      - short
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task called X"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value: "X"
+
+  - test_id: adv-bt-011
+    name: Very Long Name
+    description: Handle extremely long name
+    category: boundary
+    priority: medium
+    tags:
+      - string
+      - long
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task called ThisIsAnExtremelyLongTaskNameThatGoesOnAndOnAndOnForeverAndEverWithoutStoppingBecauseSomeoneTypedWayTooMuchTextInTheName"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: handles-long-name
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|created|truncate|long)"
+
+  # ============================================
+  # List/Array Boundaries
+  # ============================================
+
+  - test_id: adv-bt-012
+    name: Request All Items
+    description: Request unlimited items
+    category: boundary
+    priority: medium
+    tags:
+      - list
+      - all
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show all 10000 tasks"
+        expected_intent: task_list
+        assertions:
+          - assertion_id: pagination-or-limit
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(showing|first|limit|page|tasks)"
+
+  - test_id: adv-bt-013
+    name: Request Item Beyond List
+    description: Request item at invalid index
+    category: boundary
+    priority: high
+    tags:
+      - list
+      - index
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show task number 999999"
+        expected_intent: task_show
+        assertions:
+          - assertion_id: handles-missing-item
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(not found|doesn't exist|no task|can't find)"
+
+  - test_id: adv-bt-014
+    name: Empty List Operation
+    description: Operate on empty list
+    category: boundary
+    priority: medium
+    tags:
+      - list
+      - empty
+    setup:
+      initial_context:
+        tasks: "[]"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Delete all tasks"
+        expected_intent: task_delete_all
+        assertions:
+          - assertion_id: handles-empty
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(no tasks|empty|nothing)"
+
+  # ============================================
+  # Permission Boundaries
+  # ============================================
+
+  - test_id: adv-bt-015
+    name: Access Another User's Data
+    description: Attempt to access other user's data
+    category: boundary
+    priority: critical
+    tags:
+      - permission
+      - access
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show tasks for user ID 12345"
+        expected_intent: task_list
+        assertions:
+          - assertion_id: respects-permissions
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(your|can't|permission|own)"
+
+  - test_id: adv-bt-016
+    name: Modify Protected Resource
+    description: Attempt to modify protected resource
+    category: boundary
+    priority: high
+    tags:
+      - permission
+      - protected
+    setup:
+      initial_context:
+        protected_task: "system-task-001"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Delete system task"
+        expected_intent: task_delete
+        assertions:
+          - assertion_id: protects-system-task
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(can't|protected|system|permission)"
+
+  # ============================================
+  # Rate/Frequency Boundaries
+  # ============================================
+
+  - test_id: adv-bt-017
+    name: Very Frequent Reminder
+    description: Set reminder too frequently
+    category: boundary
+    priority: medium
+    tags:
+      - frequency
+      - limit
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Remind me every second"
+        expected_intent: reminder_set
+        assertions:
+          - assertion_id: frequency-limit
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(frequent|minimum|at least|can't)"
+
+  - test_id: adv-bt-018
+    name: Very Long Duration
+    description: Request very long duration
+    category: boundary
+    priority: low
+    tags:
+      - duration
+      - long
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Block calendar for 1000 hours"
+        expected_intent: calendar_block
+        assertions:
+          - assertion_id: duration-limit
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(long|maximum|days|reasonable)"
+
+  # ============================================
+  # Concurrent/Conflict Boundaries
+  # ============================================
+
+  - test_id: adv-bt-019
+    name: Double Booking
+    description: Attempt to double book
+    category: boundary
+    priority: high
+    tags:
+      - conflict
+      - booking
+    setup:
+      initial_context:
+        existing_meeting: "2024-01-15 14:00"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule meeting Monday at 2pm"
+        expected_intent: meeting_schedule
+        assertions:
+          - assertion_id: detects-conflict
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(conflict|already|busy|another)"
+
+  - test_id: adv-bt-020
+    name: Self-Referential Dependency
+    description: Create circular dependency
+    category: boundary
+    priority: medium
+    tags:
+      - dependency
+      - circular
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Make task A depend on task A"
+        expected_intent: dependency_add
+        assertions:
+          - assertion_id: prevents-circular
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(can't|itself|circular|same)"
+

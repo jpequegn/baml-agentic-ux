@@ -1,0 +1,420 @@
+# Missing Parameters Tests
+# Test cases for handling missing required parameters
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: error-handling-missing-parameters
+name: Missing Parameters Tests
+description: Tests for handling missing required parameters gracefully
+execution_order: sequential
+tags:
+  - error-handling
+  - missing-parameters
+
+tests:
+  # ============================================
+  # Required Parameter Missing
+  # ============================================
+
+  - test_id: eh-mp-001
+    name: Task Without Name
+    description: User creates task without specifying name
+    category: error_handling
+    priority: critical
+    tags:
+      - task
+      - required
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: asks-for-name
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(what|name|call|title)"
+            message: "Should ask for task name"
+
+  - test_id: eh-mp-002
+    name: Reminder Without Time
+    description: User sets reminder without time
+    category: error_handling
+    priority: critical
+    tags:
+      - reminder
+      - required
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Remind me to call mom"
+        expected_intent: reminder_set
+        expected_entities:
+          - entity_type: reminder_description
+            value_pattern: "call mom"
+        assertions:
+          - assertion_id: asks-for-time
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(when|what time|time)"
+            message: "Should ask for reminder time"
+
+  - test_id: eh-mp-003
+    name: Meeting Without Date
+    description: User schedules meeting without date
+    category: error_handling
+    priority: critical
+    tags:
+      - meeting
+      - required
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule a meeting with John"
+        expected_intent: meeting_schedule
+        expected_entities:
+          - entity_type: attendee
+            value: "John"
+        assertions:
+          - assertion_id: asks-for-date
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(when|date|day|time)"
+
+  # ============================================
+  # Multiple Required Missing
+  # ============================================
+
+  - test_id: eh-mp-004
+    name: Multiple Parameters Missing
+    description: Multiple required parameters are missing
+    category: error_handling
+    priority: high
+    tags:
+      - multiple
+      - required
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Set up a recurring event"
+        expected_intent: event_create
+        assertions:
+          - assertion_id: asks-for-params
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(what|when|name|details)"
+
+  - test_id: eh-mp-005
+    name: Progressive Parameter Collection
+    description: System collects parameters one by one
+    category: error_handling
+    priority: high
+    tags:
+      - progressive
+      - collection
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a project"
+        expected_intent: project_create
+      - turn_number: 2
+        role: assistant
+        input: "What's the project name?"
+      - turn_number: 3
+        role: user
+        input: "Website Redesign"
+      - turn_number: 4
+        role: assistant
+        input: "When is the deadline?"
+      - turn_number: 5
+        role: user
+        input: "End of quarter"
+        assertions:
+          - assertion_id: all-collected
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(created|done|set up)"
+
+  # ============================================
+  # User Refuses to Provide
+  # ============================================
+
+  - test_id: eh-mp-006
+    name: User Declines to Provide
+    description: User explicitly refuses to provide parameter
+    category: error_handling
+    priority: medium
+    tags:
+      - refusal
+      - handling
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "What would you like to call this task?"
+      - turn_number: 3
+        role: user
+        input: "I don't want to give it a name"
+        expected_intent: refusal
+        assertions:
+          - assertion_id: handles-refusal
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(need|require|default|name|must)"
+
+  - test_id: eh-mp-007
+    name: User Wants to Skip
+    description: User tries to skip required parameter
+    category: error_handling
+    priority: medium
+    tags:
+      - skip
+      - required
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Remind me about something"
+        expected_intent: reminder_set
+      - turn_number: 2
+        role: assistant
+        input: "What time should I remind you?"
+      - turn_number: 3
+        role: user
+        input: "Skip that"
+        expected_intent: skip_request
+        assertions:
+          - assertion_id: explains-required
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(need|require|must|can't skip)"
+
+  # ============================================
+  # Partial Parameters
+  # ============================================
+
+  - test_id: eh-mp-008
+    name: Incomplete Time Specification
+    description: User provides incomplete time
+    category: error_handling
+    priority: high
+    tags:
+      - incomplete
+      - time
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Remind me at 3"
+        expected_intent: reminder_set
+        expected_entities:
+          - entity_type: time
+            value: "3"
+        assertions:
+          - assertion_id: clarifies-am-pm
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(am|pm|morning|afternoon|evening)"
+
+  - test_id: eh-mp-009
+    name: Incomplete Date Specification
+    description: User provides ambiguous date
+    category: error_handling
+    priority: high
+    tags:
+      - incomplete
+      - date
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule something for the 15th"
+        expected_intent: schedule_create
+        expected_entities:
+          - entity_type: day
+            value: "15"
+        assertions:
+          - assertion_id: clarifies-month
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(which month|month|this month|next)"
+
+  # ============================================
+  # Implicit Parameter Resolution
+  # ============================================
+
+  - test_id: eh-mp-010
+    name: Use Context for Missing Param
+    description: System uses context to fill missing parameter
+    category: error_handling
+    priority: high
+    tags:
+      - context
+      - implicit
+    setup:
+      initial_context:
+        last_created_task: "Buy groceries"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Set a reminder for it"
+        expected_intent: reminder_set
+        context_requirements:
+          - key: last_created_task
+            match_type: exists
+        assertions:
+          - assertion_id: uses-context
+            assertion_type: response_contains
+            target: response
+            operator: contains
+            expected_value: "groceries"
+
+  - test_id: eh-mp-011
+    name: Context Missing - Ask User
+    description: System asks when context can't help
+    category: error_handling
+    priority: medium
+    tags:
+      - context
+      - fallback
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Delete it"
+        expected_intent: delete
+        assertions:
+          - assertion_id: asks-which
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(which|what|delete)"
+
+  # ============================================
+  # Default Value Handling
+  # ============================================
+
+  - test_id: eh-mp-012
+    name: Apply Default Priority
+    description: System applies default when parameter omitted
+    category: error_handling
+    priority: medium
+    tags:
+      - default
+      - priority
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task called buy milk"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value: "buy milk"
+        assertions:
+          - assertion_id: task-created
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(created|added|done)"
+            message: "Should create task with default priority"
+
+  - test_id: eh-mp-013
+    name: Apply Default Duration
+    description: System applies default duration for meeting
+    category: error_handling
+    priority: medium
+    tags:
+      - default
+      - duration
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule meeting with John tomorrow at 2pm"
+        expected_intent: meeting_schedule
+        expected_entities:
+          - entity_type: attendee
+            value: "John"
+          - entity_type: date
+            value: "tomorrow"
+          - entity_type: time
+            value_pattern: "2\\s*pm"
+        assertions:
+          - assertion_id: default-duration
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(30 min|1 hour|60 min|scheduled)"
+            severity: warning
+
+  # ============================================
+  # Parameter Validation Failures
+  # ============================================
+
+  - test_id: eh-mp-014
+    name: Invalid Date Format
+    description: User provides unrecognizable date format
+    category: error_handling
+    priority: high
+    tags:
+      - invalid
+      - date
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule for 45/13/2025"
+        expected_intent: schedule_create
+        assertions:
+          - assertion_id: invalid-date-error
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(valid|recognize|understand|date)"
+
+  - test_id: eh-mp-015
+    name: Invalid Email Format
+    description: User provides malformed email
+    category: error_handling
+    priority: high
+    tags:
+      - invalid
+      - email
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Send email to john.at"
+        expected_intent: email_send
+        assertions:
+          - assertion_id: invalid-email-error
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(valid|email|address)"
+
+  - test_id: eh-mp-016
+    name: Out of Range Value
+    description: User provides value outside acceptable range
+    category: error_handling
+    priority: medium
+    tags:
+      - invalid
+      - range
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Set priority to 100"
+        expected_intent: task_prioritize
+        assertions:
+          - assertion_id: range-error
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(valid|between|low|medium|high|range)"

@@ -1,0 +1,262 @@
+# Empty Input Tests
+# Test cases for handling empty or whitespace-only inputs
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: edge-case-empty-input
+name: Empty Input Tests
+description: Tests for graceful handling of empty or minimal inputs
+execution_order: sequential
+tags:
+  - edge-case
+  - empty-input
+
+tests:
+  # ============================================
+  # Completely Empty Input
+  # ============================================
+
+  - test_id: ec-ei-001
+    name: Empty String
+    description: Handle completely empty input
+    category: error_handling
+    priority: critical
+    tags:
+      - empty
+    turns:
+      - turn_number: 1
+        role: user
+        input: ""
+        expected_intent: empty
+        assertions:
+          - assertion_id: graceful-empty
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(help|something|can I|assist)"
+            message: "Should prompt for input gracefully"
+          - assertion_id: no-error
+            assertion_type: response_contains
+            target: response
+            operator: not_contains
+            expected_value: "error"
+            severity: critical
+
+  - test_id: ec-ei-002
+    name: Null Character
+    description: Handle null character input
+    category: error_handling
+    priority: high
+    tags:
+      - empty
+      - null
+    turns:
+      - turn_number: 1
+        role: user
+        input: "\u0000"
+        expected_intent: empty
+        assertions:
+          - assertion_id: handles-null
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(help|something|didn't)"
+
+  # ============================================
+  # Whitespace-Only Input
+  # ============================================
+
+  - test_id: ec-ei-003
+    name: Single Space
+    description: Handle single space input
+    category: error_handling
+    priority: high
+    tags:
+      - whitespace
+    turns:
+      - turn_number: 1
+        role: user
+        input: " "
+        expected_intent: empty
+        assertions:
+          - assertion_id: treats-as-empty
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(help|something|can I)"
+
+  - test_id: ec-ei-004
+    name: Multiple Spaces
+    description: Handle multiple space characters
+    category: error_handling
+    priority: medium
+    tags:
+      - whitespace
+    turns:
+      - turn_number: 1
+        role: user
+        input: "     "
+        expected_intent: empty
+
+  - test_id: ec-ei-005
+    name: Tab Character
+    description: Handle tab character input
+    category: error_handling
+    priority: medium
+    tags:
+      - whitespace
+      - tab
+    turns:
+      - turn_number: 1
+        role: user
+        input: "\t"
+        expected_intent: empty
+
+  - test_id: ec-ei-006
+    name: Newline Character
+    description: Handle newline character input
+    category: error_handling
+    priority: medium
+    tags:
+      - whitespace
+      - newline
+    turns:
+      - turn_number: 1
+        role: user
+        input: "\n"
+        expected_intent: empty
+
+  - test_id: ec-ei-007
+    name: Mixed Whitespace
+    description: Handle mixed whitespace characters
+    category: error_handling
+    priority: medium
+    tags:
+      - whitespace
+      - mixed
+    turns:
+      - turn_number: 1
+        role: user
+        input: "  \t\n  \t  "
+        expected_intent: empty
+
+  # ============================================
+  # Single Character Input
+  # ============================================
+
+  - test_id: ec-ei-008
+    name: Single Letter
+    description: Handle single letter input
+    category: error_handling
+    priority: medium
+    tags:
+      - single-char
+    turns:
+      - turn_number: 1
+        role: user
+        input: "a"
+        expected_intent: unknown
+        assertions:
+          - assertion_id: asks-clarification
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(understand|help|more)"
+
+  - test_id: ec-ei-009
+    name: Single Number
+    description: Handle single number input
+    category: error_handling
+    priority: medium
+    tags:
+      - single-char
+      - number
+    turns:
+      - turn_number: 1
+        role: user
+        input: "5"
+        expected_intent: unknown
+        assertions:
+          - assertion_id: context-needed
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(what|mean|help|5)"
+
+  - test_id: ec-ei-010
+    name: Single Punctuation
+    description: Handle single punctuation mark
+    category: error_handling
+    priority: medium
+    tags:
+      - single-char
+      - punctuation
+    turns:
+      - turn_number: 1
+        role: user
+        input: "?"
+        expected_intent: question
+        assertions:
+          - assertion_id: offers-help
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(help|question|ask)"
+
+  # ============================================
+  # After Context - Empty Response
+  # ============================================
+
+  - test_id: ec-ei-011
+    name: Empty After Question
+    description: Empty input after system asks a question
+    category: dialogue_flow
+    priority: high
+    tags:
+      - empty
+      - context
+    setup:
+      initial_context:
+        pending_question: "task_name"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "What would you like to name this task?"
+      - turn_number: 2
+        role: user
+        input: ""
+        expected_intent: empty
+        assertions:
+          - assertion_id: re-prompts
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(name|task|please)"
+
+  - test_id: ec-ei-012
+    name: Empty After Confirmation Request
+    description: Empty input when confirmation expected
+    category: dialogue_flow
+    priority: high
+    tags:
+      - empty
+      - confirmation
+    setup:
+      initial_context:
+        pending_action: "delete_task"
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "Are you sure you want to delete this task?"
+      - turn_number: 2
+        role: user
+        input: ""
+        expected_intent: empty
+        assertions:
+          - assertion_id: re-asks-confirmation
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(confirm|sure|yes|no)"
+

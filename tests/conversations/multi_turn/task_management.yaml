@@ -1,0 +1,474 @@
+# Multi-Turn Task Management Scenarios
+# Complex multi-turn conversations for task management
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: multi-turn-task-management
+name: Multi-Turn Task Management
+description: Complex multi-turn conversations for task management flows
+execution_order: sequential
+tags:
+  - multi-turn
+  - task-management
+  - dialogue-flow
+
+tests:
+  # ============================================
+  # Complete Task Lifecycle
+  # ============================================
+
+  - test_id: mt-tm-001
+    name: Full Task CRUD Cycle
+    description: Create, read, update, delete task in one conversation
+    category: dialogue_flow
+    priority: critical
+    tags:
+      - crud
+      - lifecycle
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task called review quarterly report"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value: "review quarterly report"
+        assertions:
+          - assertion_id: confirms-creation
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(created|added|task)"
+      - turn_number: 2
+        role: assistant
+        input: "Created task 'review quarterly report'. Would you like to set a priority or due date?"
+      - turn_number: 3
+        role: user
+        input: "Yes, make it high priority"
+        expected_intent: task_update
+        expected_entities:
+          - entity_type: priority
+            value: "high"
+      - turn_number: 4
+        role: assistant
+        input: "Updated task to high priority."
+      - turn_number: 5
+        role: user
+        input: "Show me that task"
+        expected_intent: task_show
+        context_requirements:
+          - key: current_task
+            match_type: exists
+      - turn_number: 6
+        role: assistant
+        input: "Task: review quarterly report\nPriority: High\nStatus: Open"
+      - turn_number: 7
+        role: user
+        input: "Actually, rename it to Q4 report review"
+        expected_intent: task_update
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "Q4 report"
+      - turn_number: 8
+        role: assistant
+        input: "Renamed task to 'Q4 report review'."
+      - turn_number: 9
+        role: user
+        input: "Mark it complete"
+        expected_intent: task_complete
+      - turn_number: 10
+        role: assistant
+        input: "Task 'Q4 report review' marked as complete."
+      - turn_number: 11
+        role: user
+        input: "Delete it"
+        expected_intent: task_delete
+        assertions:
+          - assertion_id: confirms-or-asks
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(delete|sure|confirm|removed)"
+
+  # ============================================
+  # Task with Subtasks
+  # ============================================
+
+  - test_id: mt-tm-002
+    name: Create Task with Subtasks
+    description: Create parent task and add subtasks
+    category: dialogue_flow
+    priority: high
+    tags:
+      - subtasks
+      - hierarchy
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a project task called website redesign"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value: "website redesign"
+          - entity_type: task_type
+            value_pattern: "project"
+      - turn_number: 2
+        role: assistant
+        input: "Created project task 'website redesign'. Want to add subtasks?"
+      - turn_number: 3
+        role: user
+        input: "Yes, add subtask: design mockups"
+        expected_intent: subtask_create
+        expected_entities:
+          - entity_type: subtask_name
+            value: "design mockups"
+      - turn_number: 4
+        role: assistant
+        input: "Added subtask 'design mockups'."
+      - turn_number: 5
+        role: user
+        input: "Add another: implement frontend"
+        expected_intent: subtask_create
+        expected_entities:
+          - entity_type: subtask_name
+            value: "implement frontend"
+      - turn_number: 6
+        role: assistant
+        input: "Added subtask 'implement frontend'."
+      - turn_number: 7
+        role: user
+        input: "Show me the whole project"
+        expected_intent: task_show
+        assertions:
+          - assertion_id: shows-hierarchy
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(website redesign|mockups|frontend)"
+
+  # ============================================
+  # Task Prioritization Session
+  # ============================================
+
+  - test_id: mt-tm-003
+    name: Batch Prioritization
+    description: Review and prioritize multiple tasks
+    category: dialogue_flow
+    priority: high
+    tags:
+      - prioritization
+      - batch
+    setup:
+      initial_context:
+        tasks:
+          - id: 1
+            name: "Review budget"
+            priority: medium
+          - id: 2
+            name: "Team meeting prep"
+            priority: medium
+          - id: 3
+            name: "Client presentation"
+            priority: medium
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show me my tasks"
+        expected_intent: task_list
+      - turn_number: 2
+        role: assistant
+        input: "You have 3 tasks:\n1. Review budget (Medium)\n2. Team meeting prep (Medium)\n3. Client presentation (Medium)"
+      - turn_number: 3
+        role: user
+        input: "The client presentation is urgent"
+        expected_intent: task_prioritize
+        expected_entities:
+          - entity_type: task_reference
+            value_pattern: "client presentation"
+          - entity_type: priority
+            value_pattern: "urgent|high"
+      - turn_number: 4
+        role: assistant
+        input: "Updated 'Client presentation' to urgent priority."
+      - turn_number: 5
+        role: user
+        input: "Budget review can wait, make it low"
+        expected_intent: task_prioritize
+        expected_entities:
+          - entity_type: task_reference
+            value_pattern: "budget"
+          - entity_type: priority
+            value: "low"
+      - turn_number: 6
+        role: assistant
+        input: "Updated 'Review budget' to low priority."
+      - turn_number: 7
+        role: user
+        input: "Now show me tasks by priority"
+        expected_intent: task_list
+        expected_entities:
+          - entity_type: sort_by
+            value: "priority"
+        assertions:
+          - assertion_id: sorted-output
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(urgent|high).*(?i)(medium).*(?i)(low)"
+
+  # ============================================
+  # Due Date Management
+  # ============================================
+
+  - test_id: mt-tm-004
+    name: Due Date Workflow
+    description: Set and adjust due dates through conversation
+    category: dialogue_flow
+    priority: high
+    tags:
+      - due-date
+      - scheduling
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: finish proposal"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "Created task 'finish proposal'."
+      - turn_number: 3
+        role: user
+        input: "It's due next Friday"
+        expected_intent: task_update
+        expected_entities:
+          - entity_type: due_date
+            value_pattern: "next Friday"
+      - turn_number: 4
+        role: assistant
+        input: "Set due date to next Friday."
+      - turn_number: 5
+        role: user
+        input: "Actually, can we push it to the Monday after?"
+        expected_intent: task_update
+        expected_entities:
+          - entity_type: due_date
+            value_pattern: "Monday"
+      - turn_number: 6
+        role: assistant
+        input: "Due date moved to Monday."
+      - turn_number: 7
+        role: user
+        input: "What's the new due date?"
+        expected_intent: task_query
+        assertions:
+          - assertion_id: shows-due-date
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(Monday|due)"
+
+  # ============================================
+  # Task Assignment Flow
+  # ============================================
+
+  - test_id: mt-tm-005
+    name: Task Assignment Conversation
+    description: Assign and reassign task through dialogue
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - assignment
+      - team
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: code review for PR #123"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "Created task 'code review for PR #123'."
+      - turn_number: 3
+        role: user
+        input: "Assign it to Sarah"
+        expected_intent: task_assign
+        expected_entities:
+          - entity_type: assignee
+            value: "Sarah"
+      - turn_number: 4
+        role: assistant
+        input: "Assigned to Sarah."
+      - turn_number: 5
+        role: user
+        input: "Sarah is out sick, give it to Mike instead"
+        expected_intent: task_reassign
+        expected_entities:
+          - entity_type: assignee
+            value: "Mike"
+      - turn_number: 6
+        role: assistant
+        input: "Reassigned from Sarah to Mike."
+      - turn_number: 7
+        role: user
+        input: "Who has it now?"
+        expected_intent: task_query
+        assertions:
+          - assertion_id: confirms-assignee
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(Mike|assigned)"
+
+  # ============================================
+  # Bulk Operations
+  # ============================================
+
+  - test_id: mt-tm-006
+    name: Bulk Task Operations
+    description: Perform bulk operations on tasks
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - bulk
+      - operations
+    setup:
+      initial_context:
+        tasks:
+          - id: 1
+            name: "Task A"
+            category: "work"
+          - id: 2
+            name: "Task B"
+            category: "work"
+          - id: 3
+            name: "Task C"
+            category: "personal"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show all work tasks"
+        expected_intent: task_list
+        expected_entities:
+          - entity_type: category
+            value: "work"
+      - turn_number: 2
+        role: assistant
+        input: "Work tasks:\n1. Task A\n2. Task B"
+      - turn_number: 3
+        role: user
+        input: "Mark all of them as high priority"
+        expected_intent: task_bulk_update
+        expected_entities:
+          - entity_type: priority
+            value: "high"
+      - turn_number: 4
+        role: assistant
+        input: "Updated 2 tasks to high priority."
+      - turn_number: 5
+        role: user
+        input: "Complete them all"
+        expected_intent: task_bulk_complete
+        assertions:
+          - assertion_id: bulk-confirmation
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(2|both|all|completed)"
+
+  # ============================================
+  # Task Recovery Flow
+  # ============================================
+
+  - test_id: mt-tm-007
+    name: Undo and Recovery
+    description: Recover from accidental actions
+    category: dialogue_flow
+    priority: high
+    tags:
+      - undo
+      - recovery
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Delete task 'important meeting'"
+        expected_intent: task_delete
+      - turn_number: 2
+        role: assistant
+        input: "Are you sure you want to delete 'important meeting'?"
+      - turn_number: 3
+        role: user
+        input: "Yes"
+        expected_intent: confirmation_yes
+      - turn_number: 4
+        role: assistant
+        input: "Deleted task 'important meeting'."
+      - turn_number: 5
+        role: user
+        input: "Wait no! Undo that!"
+        expected_intent: undo
+        assertions:
+          - assertion_id: supports-undo
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(restored|undone|recovered|can't)"
+
+  # ============================================
+  # Complex Query Session
+  # ============================================
+
+  - test_id: mt-tm-008
+    name: Task Query Refinement
+    description: Progressively refine task queries
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - query
+      - refinement
+    setup:
+      initial_context:
+        tasks:
+          - name: "Urgent report"
+            priority: high
+            due: "tomorrow"
+          - name: "Client call"
+            priority: high
+            due: "next week"
+          - name: "Review docs"
+            priority: medium
+            due: "tomorrow"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "What tasks are due tomorrow?"
+        expected_intent: task_query
+        expected_entities:
+          - entity_type: due_date
+            value: "tomorrow"
+      - turn_number: 2
+        role: assistant
+        input: "Tasks due tomorrow:\n- Urgent report (High)\n- Review docs (Medium)"
+      - turn_number: 3
+        role: user
+        input: "Which of those is high priority?"
+        expected_intent: task_filter
+        expected_entities:
+          - entity_type: priority
+            value: "high"
+        context_requirements:
+          - key: previous_results
+            match_type: exists
+      - turn_number: 4
+        role: assistant
+        input: "High priority task due tomorrow: Urgent report"
+      - turn_number: 5
+        role: user
+        input: "What else is high priority but due later?"
+        expected_intent: task_query
+        assertions:
+          - assertion_id: contextual-filter
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(client call|next week)"
+

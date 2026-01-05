@@ -1,0 +1,368 @@
+# Unknown Intent Handling Tests
+# Test cases for graceful handling of unrecognized intents
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: error-handling-unknown-intent
+name: Unknown Intent Handling Tests
+description: Tests for graceful handling when user intent cannot be determined
+execution_order: sequential
+tags:
+  - error-handling
+  - unknown-intent
+
+tests:
+  # ============================================
+  # Complete Gibberish
+  # ============================================
+
+  - test_id: eh-ui-001
+    name: Random Characters
+    description: System handles random character input
+    category: error_handling
+    priority: high
+    tags:
+      - gibberish
+      - random
+    turns:
+      - turn_number: 1
+        role: user
+        input: "asdfghjkl"
+        expected_intent: unknown
+        assertions:
+          - assertion_id: graceful-response
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(understand|sorry|help|rephrase|didn't get)"
+            message: "Should provide helpful response for gibberish"
+          - assertion_id: no-crash
+            assertion_type: response_contains
+            target: response
+            operator: not_contains
+            expected_value: "error"
+            severity: critical
+
+  - test_id: eh-ui-002
+    name: Keyboard Mash
+    description: System handles keyboard mash input
+    category: error_handling
+    priority: medium
+    tags:
+      - gibberish
+    turns:
+      - turn_number: 1
+        role: user
+        input: "kjasdlkfj asdjfkl asjdklf"
+        expected_intent: unknown
+        assertions:
+          - assertion_id: helpful-response
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(help|try|example|can)"
+
+  # ============================================
+  # Out of Domain Requests
+  # ============================================
+
+  - test_id: eh-ui-003
+    name: Weather Query (Out of Scope)
+    description: System handles out-of-domain request
+    category: error_handling
+    priority: high
+    tags:
+      - out-of-domain
+      - weather
+    turns:
+      - turn_number: 1
+        role: user
+        input: "What's the weather like today?"
+        expected_intent: out_of_scope
+        assertions:
+          - assertion_id: scope-redirect
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(can't|unable|not able|outside|different|help with)"
+            message: "Should politely decline out-of-scope requests"
+
+  - test_id: eh-ui-004
+    name: Recipe Request (Out of Scope)
+    description: System handles unrelated domain request
+    category: error_handling
+    priority: medium
+    tags:
+      - out-of-domain
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Give me a recipe for chocolate cake"
+        expected_intent: out_of_scope
+        assertions:
+          - assertion_id: polite-decline
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(sorry|can't|help with|task|instead)"
+
+  - test_id: eh-ui-005
+    name: Technical Question (Out of Scope)
+    description: System handles technical question outside domain
+    category: error_handling
+    priority: medium
+    tags:
+      - out-of-domain
+      - technical
+    turns:
+      - turn_number: 1
+        role: user
+        input: "How do I configure nginx reverse proxy?"
+        expected_intent: out_of_scope
+
+  # ============================================
+  # Ambiguous Intent
+  # ============================================
+
+  - test_id: eh-ui-006
+    name: Ambiguous Request
+    description: System asks for clarification on ambiguous input
+    category: error_handling
+    priority: high
+    tags:
+      - ambiguous
+      - clarification
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Do that"
+        expected_intent: ambiguous
+        assertions:
+          - assertion_id: asks-clarification
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(what|which|clarify|specific|mean)"
+            message: "Should ask for clarification"
+
+  - test_id: eh-ui-007
+    name: Vague Request
+    description: System handles vague request
+    category: error_handling
+    priority: high
+    tags:
+      - ambiguous
+      - vague
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Make it better"
+        expected_intent: ambiguous
+        assertions:
+          - assertion_id: seeks-specifics
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(what|how|which|specifically)"
+
+  - test_id: eh-ui-008
+    name: Context-Dependent Without Context
+    description: System handles pronoun reference without context
+    category: error_handling
+    priority: high
+    tags:
+      - ambiguous
+      - reference
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Delete it"
+        expected_intent: ambiguous
+        assertions:
+          - assertion_id: asks-what
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(what|which|delete)"
+
+  # ============================================
+  # Partially Recognized
+  # ============================================
+
+  - test_id: eh-ui-009
+    name: Intent with Typos
+    description: System handles intent with significant typos
+    category: error_handling
+    priority: medium
+    tags:
+      - typos
+      - partial
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Crete a taks"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: fuzzy-match
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|create|mean)"
+            severity: warning
+            message: "Should attempt to understand despite typos"
+
+  - test_id: eh-ui-010
+    name: Mixed Language
+    description: System handles mixed language input
+    category: error_handling
+    priority: low
+    tags:
+      - language
+      - mixed
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create una tarea"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: handles-mixed
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|create|help)"
+            severity: warning
+
+  # ============================================
+  # Incomplete Sentences
+  # ============================================
+
+  - test_id: eh-ui-011
+    name: Sentence Fragment
+    description: System handles incomplete sentence
+    category: error_handling
+    priority: medium
+    tags:
+      - incomplete
+      - fragment
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I want to"
+        expected_intent: incomplete
+        assertions:
+          - assertion_id: prompts-completion
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(what|would you like|continue|finish)"
+
+  - test_id: eh-ui-012
+    name: Trailing Off
+    description: System handles trailing sentence
+    category: error_handling
+    priority: medium
+    tags:
+      - incomplete
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Can you help me with..."
+        expected_intent: incomplete
+        assertions:
+          - assertion_id: asks-to-continue
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(what|help|with)"
+
+  # ============================================
+  # Contradictory Intent
+  # ============================================
+
+  - test_id: eh-ui-013
+    name: Contradictory Request
+    description: System handles contradictory instructions
+    category: error_handling
+    priority: medium
+    tags:
+      - contradictory
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task but don't create it"
+        expected_intent: ambiguous
+        assertions:
+          - assertion_id: seeks-clarity
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(clarify|mean|understand|which)"
+
+  - test_id: eh-ui-014
+    name: Self-Canceling Request
+    description: System handles request that cancels itself
+    category: error_handling
+    priority: low
+    tags:
+      - contradictory
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Add then remove item from list"
+        expected_intent: ambiguous
+
+  # ============================================
+  # Recovery Paths
+  # ============================================
+
+  - test_id: eh-ui-015
+    name: Recover with Examples
+    description: System offers examples after unknown intent
+    category: error_handling
+    priority: high
+    tags:
+      - recovery
+      - examples
+    turns:
+      - turn_number: 1
+        role: user
+        input: "xyzzy"
+        expected_intent: unknown
+      - turn_number: 2
+        role: assistant
+        input: "I'm not sure what you mean. You can try things like 'Create a task' or 'Show my tasks'."
+      - turn_number: 3
+        role: user
+        input: "Show my tasks"
+        expected_intent: task_list
+        assertions:
+          - assertion_id: recovered
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|here|list)"
+
+  - test_id: eh-ui-016
+    name: Recover with Rephrase
+    description: User rephrases after initial failure
+    category: error_handling
+    priority: high
+    tags:
+      - recovery
+      - rephrase
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Do the thing with the stuff"
+        expected_intent: ambiguous
+      - turn_number: 2
+        role: assistant
+        input: "Could you be more specific about what you'd like to do?"
+      - turn_number: 3
+        role: user
+        input: "I mean, create a new task for buying groceries"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "buying groceries"

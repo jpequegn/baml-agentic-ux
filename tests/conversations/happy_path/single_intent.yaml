@@ -1,0 +1,434 @@
+# Single Intent Execution Tests
+# Test cases for simple, single-intent interactions
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+# Test Suite Definition
+suite_id: happy-path-single-intent
+name: Single Intent Execution Tests
+description: Tests for simple, single-intent interactions without complexity
+execution_order: sequential
+tags:
+  - happy-path
+  - single-intent
+  - basic
+
+tests:
+  # ============================================
+  # Greeting Intents
+  # ============================================
+
+  - test_id: hp-si-001
+    name: Simple Greeting
+    description: User sends a basic greeting and receives appropriate response
+    category: intent_recognition
+    priority: high
+    tags:
+      - greeting
+      - basic
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Hello"
+        expected_intent: greeting
+        assertions:
+          - assertion_id: greet-response
+            assertion_type: response_contains
+            target: response
+            operator: matches
+            expected_value: "(?i)(hello|hi|hey|greetings)"
+            message: "Response should contain a greeting"
+
+  - test_id: hp-si-002
+    name: Formal Greeting
+    description: User sends a formal greeting
+    category: intent_recognition
+    priority: medium
+    tags:
+      - greeting
+      - formal
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Good morning, I need some help"
+        expected_intent: greeting
+        assertions:
+          - assertion_id: acknowledge-greeting
+            assertion_type: response_contains
+            target: response
+            operator: contains
+            expected_value: "morning"
+            severity: warning
+
+  # ============================================
+  # Help/Information Intents
+  # ============================================
+
+  - test_id: hp-si-003
+    name: Request Help
+    description: User asks for general help
+    category: intent_recognition
+    priority: high
+    tags:
+      - help
+      - basic
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I need help"
+        expected_intent: help_request
+        assertions:
+          - assertion_id: help-offered
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(help|assist|support)"
+
+  - test_id: hp-si-004
+    name: What Can You Do
+    description: User asks about capabilities
+    category: intent_recognition
+    priority: high
+    tags:
+      - capabilities
+      - discovery
+    turns:
+      - turn_number: 1
+        role: user
+        input: "What can you do?"
+        expected_intent: capabilities_query
+        assertions:
+          - assertion_id: capabilities-response
+            assertion_type: response_contains
+            target: response
+            operator: contains
+            expected_value: "can"
+
+  # ============================================
+  # Task Creation Intents
+  # ============================================
+
+  - test_id: hp-si-005
+    name: Create Simple Task
+    description: User creates a task with minimal information
+    category: intent_recognition
+    priority: critical
+    tags:
+      - task
+      - create
+      - core
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task"
+        expected_intent: task_create
+        assertions:
+          - assertion_id: task-acknowledgment
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(creat|task|todo)"
+
+  - test_id: hp-si-006
+    name: Create Named Task
+    description: User creates a task with a specific name
+    category: entity_extraction
+    priority: critical
+    tags:
+      - task
+      - create
+      - entity
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task called buy groceries"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value: "buy groceries"
+            required: true
+        assertions:
+          - assertion_id: task-name-extracted
+            assertion_type: entity_present
+            target: entities
+            operator: equals
+            expected_value: "task_name"
+
+  - test_id: hp-si-007
+    name: Create Task with Priority
+    description: User creates a task with priority specified
+    category: entity_extraction
+    priority: high
+    tags:
+      - task
+      - create
+      - priority
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a high priority task for the meeting prep"
+        expected_intent: task_create
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "meeting prep"
+            required: true
+          - entity_type: priority
+            value: "high"
+            required: true
+
+  # ============================================
+  # Task Query Intents
+  # ============================================
+
+  - test_id: hp-si-008
+    name: List All Tasks
+    description: User requests to see all tasks
+    category: intent_recognition
+    priority: critical
+    tags:
+      - task
+      - query
+      - list
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show me my tasks"
+        expected_intent: task_list
+        assertions:
+          - assertion_id: list-response
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|todo|list|here)"
+
+  - test_id: hp-si-009
+    name: Show Pending Tasks
+    description: User requests to see only pending tasks
+    category: entity_extraction
+    priority: high
+    tags:
+      - task
+      - query
+      - filter
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Show my pending tasks"
+        expected_intent: task_list
+        expected_entities:
+          - entity_type: status_filter
+            value: "pending"
+
+  - test_id: hp-si-010
+    name: Count Tasks
+    description: User asks how many tasks they have
+    category: intent_recognition
+    priority: medium
+    tags:
+      - task
+      - query
+      - count
+    turns:
+      - turn_number: 1
+        role: user
+        input: "How many tasks do I have?"
+        expected_intent: task_count
+
+  # ============================================
+  # Task Completion Intents
+  # ============================================
+
+  - test_id: hp-si-011
+    name: Complete Task
+    description: User marks a task as complete
+    category: intent_recognition
+    priority: critical
+    tags:
+      - task
+      - complete
+      - core
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Mark the groceries task as done"
+        expected_intent: task_complete
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "groceries"
+
+  - test_id: hp-si-012
+    name: Finish Task Alternative
+    description: User uses alternative wording for completion
+    category: intent_recognition
+    priority: medium
+    tags:
+      - task
+      - complete
+      - variation
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I finished buying groceries"
+        expected_intent: task_complete
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "groceries"
+
+  # ============================================
+  # Reminder Intents
+  # ============================================
+
+  - test_id: hp-si-013
+    name: Set Simple Reminder
+    description: User sets a reminder with time
+    category: entity_extraction
+    priority: high
+    tags:
+      - reminder
+      - time
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Remind me at 3pm"
+        expected_intent: reminder_set
+        expected_entities:
+          - entity_type: time
+            value_pattern: "3\\s*pm"
+
+  - test_id: hp-si-014
+    name: Set Reminder with Description
+    description: User sets a reminder with description
+    category: entity_extraction
+    priority: high
+    tags:
+      - reminder
+      - description
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Remind me to call mom tomorrow"
+        expected_intent: reminder_set
+        expected_entities:
+          - entity_type: reminder_description
+            value_pattern: "call mom"
+          - entity_type: date
+            value_pattern: "tomorrow"
+
+  # ============================================
+  # Status/Information Queries
+  # ============================================
+
+  - test_id: hp-si-015
+    name: Check Status
+    description: User checks their overall status
+    category: intent_recognition
+    priority: medium
+    tags:
+      - status
+      - query
+    turns:
+      - turn_number: 1
+        role: user
+        input: "What's my status?"
+        expected_intent: status_query
+
+  - test_id: hp-si-016
+    name: Time Query
+    description: User asks for current time
+    category: intent_recognition
+    priority: low
+    tags:
+      - time
+      - query
+    turns:
+      - turn_number: 1
+        role: user
+        input: "What time is it?"
+        expected_intent: time_query
+
+  - test_id: hp-si-017
+    name: Date Query
+    description: User asks for current date
+    category: intent_recognition
+    priority: low
+    tags:
+      - date
+      - query
+    turns:
+      - turn_number: 1
+        role: user
+        input: "What's today's date?"
+        expected_intent: date_query
+
+  # ============================================
+  # Confirmation Responses
+  # ============================================
+
+  - test_id: hp-si-018
+    name: Affirmative Confirmation
+    description: User confirms with yes
+    category: intent_recognition
+    priority: high
+    tags:
+      - confirmation
+      - yes
+    setup:
+      initial_context:
+        awaiting_confirmation: "true"
+        pending_action: "task_delete"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Yes"
+        expected_intent: confirmation_yes
+
+  - test_id: hp-si-019
+    name: Negative Confirmation
+    description: User declines with no
+    category: intent_recognition
+    priority: high
+    tags:
+      - confirmation
+      - no
+    setup:
+      initial_context:
+        awaiting_confirmation: "true"
+        pending_action: "task_delete"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "No, cancel that"
+        expected_intent: confirmation_no
+
+  # ============================================
+  # Cancel/Abort Intents
+  # ============================================
+
+  - test_id: hp-si-020
+    name: Cancel Operation
+    description: User cancels current operation
+    category: intent_recognition
+    priority: high
+    tags:
+      - cancel
+      - abort
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Cancel"
+        expected_intent: cancel
+
+  - test_id: hp-si-021
+    name: Never Mind
+    description: User abandons request informally
+    category: intent_recognition
+    priority: medium
+    tags:
+      - cancel
+      - informal
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Never mind"
+        expected_intent: cancel

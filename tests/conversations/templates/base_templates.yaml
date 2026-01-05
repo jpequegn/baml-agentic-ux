@@ -1,0 +1,303 @@
+# Base Test Templates
+# Reusable templates for common test patterns
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+# ============================================
+# Template Definitions
+# ============================================
+# These templates define reusable patterns for test cases.
+# Use template_ref to inherit from these templates.
+# ============================================
+
+templates:
+  # ============================================
+  # Intent Recognition Templates
+  # ============================================
+
+  - template_id: intent-recognition-basic
+    name: Basic Intent Recognition Test
+    description: Template for simple intent recognition tests
+    category: intent_recognition
+    schema:
+      required_fields:
+        - input
+        - expected_intent
+      optional_fields:
+        - expected_entities
+        - assertions
+    defaults:
+      priority: medium
+      tags:
+        - intent-recognition
+    turns:
+      - turn_number: 1
+        role: user
+        # input: provided by test
+        # expected_intent: provided by test
+
+  - template_id: intent-with-entities
+    name: Intent with Entity Extraction
+    description: Template for intent + entity extraction tests
+    category: intent_recognition
+    schema:
+      required_fields:
+        - input
+        - expected_intent
+        - expected_entities
+    defaults:
+      priority: high
+      tags:
+        - intent-recognition
+        - entity-extraction
+    turns:
+      - turn_number: 1
+        role: user
+        # input: provided by test
+        # expected_intent: provided by test
+        # expected_entities: provided by test
+
+  # ============================================
+  # Error Handling Templates
+  # ============================================
+
+  - template_id: graceful-error-handling
+    name: Graceful Error Handling
+    description: Template for testing graceful error responses
+    category: error_handling
+    schema:
+      required_fields:
+        - input
+        - error_type
+    defaults:
+      priority: high
+      tags:
+        - error-handling
+    assertions_template:
+      - assertion_id: no-crash
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "error"
+        severity: critical
+      - assertion_id: user-friendly
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(sorry|help|try|can)"
+
+  - template_id: parameter-missing
+    name: Missing Parameter Handling
+    description: Template for missing required parameter tests
+    category: error_handling
+    schema:
+      required_fields:
+        - input
+        - missing_parameter
+    defaults:
+      priority: high
+      tags:
+        - error-handling
+        - parameter-validation
+    assertions_template:
+      - assertion_id: asks-for-param
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(what|which|please provide|need)"
+
+  # ============================================
+  # Confirmation Flow Templates
+  # ============================================
+
+  - template_id: confirm-action
+    name: Action Confirmation Flow
+    description: Template for confirmation dialog tests
+    category: dialogue_flow
+    schema:
+      required_fields:
+        - action_type
+        - confirmation_response
+    defaults:
+      priority: high
+      tags:
+        - confirmation
+        - dialogue
+    turns:
+      - turn_number: 1
+        role: assistant
+        # input: confirmation question
+      - turn_number: 2
+        role: user
+        # input: confirmation_response
+
+  - template_id: destructive-action-confirm
+    name: Destructive Action Confirmation
+    description: Template for destructive action confirmations
+    category: dialogue_flow
+    schema:
+      required_fields:
+        - action_type
+        - target_item
+    defaults:
+      priority: critical
+      tags:
+        - confirmation
+        - destructive
+    turns:
+      - turn_number: 1
+        role: assistant
+        input: "Are you sure you want to {action_type} '{target_item}'?"
+      - turn_number: 2
+        role: user
+        # input: provided by test
+
+  # ============================================
+  # Multi-Turn Flow Templates
+  # ============================================
+
+  - template_id: slot-filling-flow
+    name: Slot Filling Flow
+    description: Template for multi-turn slot filling
+    category: dialogue_flow
+    schema:
+      required_fields:
+        - initial_intent
+        - slots
+    defaults:
+      priority: high
+      tags:
+        - slot-filling
+        - multi-turn
+    # Turns are generated based on slots array
+
+  - template_id: wizard-flow
+    name: Multi-Step Wizard
+    description: Template for wizard-style multi-step flows
+    category: dialogue_flow
+    schema:
+      required_fields:
+        - wizard_name
+        - steps
+    defaults:
+      priority: medium
+      tags:
+        - wizard
+        - multi-step
+
+  # ============================================
+  # Security Templates
+  # ============================================
+
+  - template_id: injection-resistance
+    name: Injection Attack Resistance
+    description: Template for testing injection attack resistance
+    category: security
+    schema:
+      required_fields:
+        - attack_type
+        - payload
+    defaults:
+      priority: critical
+      tags:
+        - security
+        - injection
+    assertions_template:
+      - assertion_id: no-execution
+        assertion_type: response_pattern
+        target: response
+        operator: not_contains
+        expected_value: "{payload_indicator}"
+        severity: critical
+      - assertion_id: safe-response
+        assertion_type: response_pattern
+        target: response
+        operator: matches
+        expected_value: "(?i)(help|understand|can I)"
+
+  - template_id: boundary-test
+    name: Boundary Test
+    description: Template for testing system boundaries
+    category: boundary
+    schema:
+      required_fields:
+        - boundary_type
+        - test_value
+    defaults:
+      priority: high
+      tags:
+        - boundary
+        - limits
+
+  # ============================================
+  # Context Retention Templates
+  # ============================================
+
+  - template_id: pronoun-resolution
+    name: Pronoun Resolution Test
+    description: Template for testing pronoun resolution
+    category: context_retention
+    schema:
+      required_fields:
+        - initial_entity
+        - pronoun
+        - expected_resolution
+    defaults:
+      priority: high
+      tags:
+        - context
+        - pronoun
+    turns:
+      - turn_number: 1
+        role: user
+        # input: creates or references initial_entity
+      - turn_number: 2
+        role: assistant
+        # confirms initial_entity
+      - turn_number: 3
+        role: user
+        # uses pronoun to reference initial_entity
+
+  - template_id: context-persistence
+    name: Context Persistence Test
+    description: Template for testing context persistence
+    category: context_retention
+    schema:
+      required_fields:
+        - context_key
+        - context_value
+        - turns_to_persist
+    defaults:
+      priority: medium
+      tags:
+        - context
+        - persistence
+
+# ============================================
+# Example Template Usage
+# ============================================
+
+examples:
+  - description: Using intent-recognition-basic template
+    template_ref: intent-recognition-basic
+    test_id: example-001
+    name: Create Task Intent
+    input: "Create a task"
+    expected_intent: task_create
+
+  - description: Using graceful-error-handling template
+    template_ref: graceful-error-handling
+    test_id: example-002
+    name: Handle Unknown Input
+    input: "asdfgh"
+    error_type: unknown_input
+
+  - description: Using destructive-action-confirm template
+    template_ref: destructive-action-confirm
+    test_id: example-003
+    name: Delete Task Confirmation
+    action_type: delete
+    target_item: "important task"
+    confirmation_input: "Yes, delete it"
+

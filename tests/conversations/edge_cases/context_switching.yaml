@@ -1,0 +1,384 @@
+# Context Switching Tests
+# Test cases for handling rapid context switches
+#
+# Part of Task 6.9: Test Case Library
+# Issue #97 - Phase 6: Conversational Testing Framework
+
+suite_id: edge-case-context-switching
+name: Context Switching Tests
+description: Tests for handling rapid topic and context switches
+execution_order: sequential
+tags:
+  - edge-case
+  - context-switching
+
+tests:
+  # ============================================
+  # Abrupt Topic Change
+  # ============================================
+
+  - test_id: ec-cs-001
+    name: Immediate Topic Switch
+    description: User abruptly changes topic
+    category: dialogue_flow
+    priority: critical
+    tags:
+      - abrupt
+      - topic-change
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task called buy groceries"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "Created task 'buy groceries'"
+      - turn_number: 3
+        role: user
+        input: "What's the weather like?"
+        expected_intent: out_of_scope
+        assertions:
+          - assertion_id: handles-switch
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(weather|can't|help with)"
+
+  - test_id: ec-cs-002
+    name: Switch During Parameter Collection
+    description: User switches during slot filling
+    category: dialogue_flow
+    priority: high
+    tags:
+      - abrupt
+      - slot-filling
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "What should I call this task?"
+      - turn_number: 3
+        role: user
+        input: "Actually, show me my calendar"
+        expected_intent: calendar_view
+        assertions:
+          - assertion_id: abandons-previous
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(calendar|schedule|events)"
+
+  - test_id: ec-cs-003
+    name: Return to Previous Topic
+    description: User returns to earlier topic
+    category: context_retention
+    priority: high
+    tags:
+      - return
+      - memory
+    setup:
+      initial_context:
+        previous_topic: "task_creation"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task called project review"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "Created task 'project review'"
+      - turn_number: 3
+        role: user
+        input: "Show my meetings"
+        expected_intent: meeting_list
+      - turn_number: 4
+        role: assistant
+        input: "Here are your meetings..."
+      - turn_number: 5
+        role: user
+        input: "Go back to that task"
+        expected_intent: task_view
+        context_requirements:
+          - key: previous_topic
+            match_type: exists
+        assertions:
+          - assertion_id: remembers-task
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(project review|task)"
+
+  # ============================================
+  # Rapid Fire Requests
+  # ============================================
+
+  - test_id: ec-cs-004
+    name: Multiple Intents Same Message
+    description: User makes multiple requests in one message
+    category: intent_recognition
+    priority: high
+    tags:
+      - multiple
+      - rapid
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a task, then show my calendar, and set a reminder"
+        expected_intent: multi_intent
+        assertions:
+          - assertion_id: acknowledges-multiple
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|calendar|reminder|multiple|first|let me)"
+
+  - test_id: ec-cs-005
+    name: Contradictory Rapid Requests
+    description: User gives contradictory commands quickly
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - contradictory
+      - rapid
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Delete task 1"
+        expected_intent: task_delete
+      - turn_number: 2
+        role: assistant
+        input: "Are you sure you want to delete task 1?"
+      - turn_number: 3
+        role: user
+        input: "Yes delete it. No wait, keep it."
+        expected_intent: ambiguous
+        assertions:
+          - assertion_id: seeks-clarity
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(delete|keep|which|clarify)"
+
+  # ============================================
+  # Context Interruption
+  # ============================================
+
+  - test_id: ec-cs-006
+    name: Mid-Sentence Topic Change
+    description: User changes topic mid-thought
+    category: intent_recognition
+    priority: medium
+    tags:
+      - mid-sentence
+    turns:
+      - turn_number: 1
+        role: user
+        input: "I want to create a task about... oh wait, first show me my tasks"
+        expected_intent: task_list
+        assertions:
+          - assertion_id: follows-final-intent
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|list|here)"
+
+  - test_id: ec-cs-007
+    name: Nested Context Switch
+    description: User switches while already switched
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - nested
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task A"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "Created task A. Anything else?"
+      - turn_number: 3
+        role: user
+        input: "Wait, first create task B"
+        expected_intent: task_create
+      - turn_number: 4
+        role: assistant
+        input: "Created task B."
+      - turn_number: 5
+        role: user
+        input: "Now what was I doing with task A?"
+        expected_intent: context_recall
+        assertions:
+          - assertion_id: recalls-context
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task A|created|before)"
+
+  # ============================================
+  # Domain Switching
+  # ============================================
+
+  - test_id: ec-cs-008
+    name: Work to Personal Switch
+    description: Switch from work to personal context
+    category: context_retention
+    priority: medium
+    tags:
+      - domain
+      - personal
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Schedule team meeting for Monday"
+        expected_intent: meeting_schedule
+        expected_entities:
+          - entity_type: meeting_type
+            value_pattern: "work|team"
+      - turn_number: 2
+        role: assistant
+        input: "Scheduled team meeting for Monday"
+      - turn_number: 3
+        role: user
+        input: "Also remind me about mom's birthday"
+        expected_intent: reminder_set
+        expected_entities:
+          - entity_type: category
+            value_pattern: "personal"
+
+  - test_id: ec-cs-009
+    name: Unrelated Topic Injection
+    description: User injects completely unrelated topic
+    category: dialogue_flow
+    priority: medium
+    tags:
+      - unrelated
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create a project plan"
+        expected_intent: project_create
+      - turn_number: 2
+        role: assistant
+        input: "I'll help create a project plan. What's the name?"
+      - turn_number: 3
+        role: user
+        input: "Did you know cats can't taste sweetness?"
+        expected_intent: off_topic
+        assertions:
+          - assertion_id: handles-tangent
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(interesting|project|continue|help)"
+
+  # ============================================
+  # Temporal Context Switches
+  # ============================================
+
+  - test_id: ec-cs-010
+    name: Past to Future Switch
+    description: Switch from past to future context
+    category: context_retention
+    priority: medium
+    tags:
+      - temporal
+    turns:
+      - turn_number: 1
+        role: user
+        input: "What did I do yesterday?"
+        expected_intent: history_query
+      - turn_number: 2
+        role: assistant
+        input: "Yesterday you completed 3 tasks..."
+      - turn_number: 3
+        role: user
+        input: "Now show me what's coming up tomorrow"
+        expected_intent: schedule_query
+        assertions:
+          - assertion_id: switches-timeframe
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(tomorrow|upcoming|schedule)"
+
+  - test_id: ec-cs-011
+    name: Reference Ambiguity After Switch
+    description: Ambiguous reference after topic switch
+    category: dialogue_flow
+    priority: high
+    tags:
+      - reference
+      - ambiguous
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: Buy milk"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "Created task 'Buy milk'"
+      - turn_number: 3
+        role: user
+        input: "Schedule meeting with John"
+        expected_intent: meeting_schedule
+      - turn_number: 4
+        role: assistant
+        input: "When should I schedule the meeting?"
+      - turn_number: 5
+        role: user
+        input: "Delete it"
+        expected_intent: delete
+        assertions:
+          - assertion_id: clarifies-reference
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(which|task|meeting|delete)"
+
+  # ============================================
+  # State Persistence
+  # ============================================
+
+  - test_id: ec-cs-012
+    name: Partial State Preserved
+    description: Partial input preserved across switch
+    category: context_retention
+    priority: medium
+    tags:
+      - state
+      - partial
+    setup:
+      initial_context:
+        partial_task: "Buy"
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Create task: Buy"
+        expected_intent: task_create
+      - turn_number: 2
+        role: assistant
+        input: "Buy what?"
+      - turn_number: 3
+        role: user
+        input: "What time is it?"
+        expected_intent: time_query
+      - turn_number: 4
+        role: assistant
+        input: "It's 3:00 PM"
+      - turn_number: 5
+        role: user
+        input: "Milk. For the task."
+        expected_entities:
+          - entity_type: task_name
+            value_pattern: "milk"
+        assertions:
+          - assertion_id: resumes-context
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(task|buy milk|created)"
+
