@@ -46,9 +46,13 @@ baml-agentic-ux/
 │
 ├── docs/
 │   ├── RESEARCH_SYNTHESIS.md    # Complete research findings
-│   └── BLOG_POST.md             # Shareable summary
+│   ├── BLOG_POST.md             # Shareable summary
+│   └── testing/                 # Testing framework documentation
+│       ├── user-guide.md        # Complete usage guide
+│       └── api-reference.md     # API documentation
 │
-└── tests/                       # 254 test cases
+└── tests/                       # 3700+ test cases
+    └── conversations/           # Conversational test suites
 ```
 
 ## Quick Start
@@ -76,7 +80,7 @@ uv run baml-cli generate
 ### Run Tests
 
 ```bash
-uv run pytest  # 254 tests
+uv run pytest  # 3700+ tests
 ```
 
 ### Example: Load and Explore a Schema
@@ -213,6 +217,66 @@ See [docs/RESEARCH_SYNTHESIS.md](docs/RESEARCH_SYNTHESIS.md) for the complete re
 | MCP | AI tool definitions |
 | TypeScript | Frontend type safety |
 | Markdown | Human-readable docs |
+
+## Conversational Testing Framework
+
+A comprehensive testing framework for validating LUI components, intent extraction, and dialogue quality.
+
+### Quick Start
+
+```bash
+# Generate configuration file
+convtest generate config
+
+# Run conversation tests
+convtest run tests/conversations/
+
+# Check quality gates
+convtest check-gates test-results.json
+```
+
+### Features
+
+- **YAML-based test definitions** - Declarative test cases with assertions
+- **Multi-turn conversation testing** - Validate dialogue flows
+- **Quality metrics** - Coherence, naturalness, and accuracy scoring
+- **CI/CD integration** - Quality gates for automated pipelines
+- **Multiple output formats** - Text, JSON, JUnit, HTML, Markdown
+
+### Example Test
+
+```yaml
+tests:
+  - test_id: greeting-test
+    name: Basic Greeting Test
+    category: intent_recognition
+    priority: high
+    turns:
+      - turn_number: 1
+        role: user
+        input: "Hello, I need help"
+        expected_intent: greeting
+        assertions:
+          - assertion_id: friendly-response
+            assertion_type: response_pattern
+            target: response
+            operator: matches
+            expected_value: "(?i)(hello|hi|hey)"
+```
+
+### Quality Gates
+
+| Metric | Default | Type |
+|--------|---------|------|
+| Pass Rate | ≥95% | Blocking |
+| Intent Accuracy | ≥95% | Blocking |
+| Coherence | ≥0.85 | Warning |
+| Naturalness | ≥0.80 | Warning |
+
+### Documentation
+
+- [User Guide](docs/testing/user-guide.md) - Complete usage guide
+- [API Reference](docs/testing/api-reference.md) - Detailed API documentation
 
 ## Contributing
 
