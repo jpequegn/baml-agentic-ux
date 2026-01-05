@@ -95,6 +95,7 @@ jobs:
         id: run_tests
         run: |
           # Run pytest with coverage and JUnit XML output
+          set +e  # Don't exit on error, we'll handle it manually
           uv run pytest tests/ \
             --cov=src \
             --cov-report=xml:coverage.xml \
@@ -106,20 +107,40 @@ jobs:
             2>&1 | tee test-output.log
 
           TEST_EXIT_CODE=${PIPESTATUS[0]}
+          set -e
 
-          # Parse test results for metrics
-          TOTAL=$(grep -oP 'collected \K\d+' test-output.log || echo "0")
-          PASSED=$(grep -oP '\d+(?= passed)' test-output.log || echo "0")
-          FAILED=$(grep -oP '\d+(?= failed)' test-output.log || echo "0")
+          # Parse test results from the summary line (e.g., "3617 passed, 1183 warnings")
+          # Use grep with extended regex and handle missing patterns gracefully
+          PASSED=$(grep -E '[0-9]+ passed' test-output.log | tail -1 | grep -oE '[0-9]+(?= passed)' | head -1 || echo "0")
+          FAILED=$(grep -E '[0-9]+ failed' test-output.log | tail -1 | grep -oE '[0-9]+(?= failed)' | head -1 || echo "0")
+
+          # If PASSED is empty, set to 0
+          PASSED=${PASSED:-0}
+          FAILED=${FAILED:-0}
+
+          # Calculate total
+          TOTAL=$((PASSED + FAILED))
 
           if [ "$TOTAL" -gt 0 ]; then
             PASS_RATE=$(echo "scale=2; $PASSED * 100 / $TOTAL" | bc)
           else
-            PASS_RATE="0"
+            # If no tests found, assume success if exit code was 0
+            if [ "$TEST_EXIT_CODE" -eq 0 ]; then
+              PASS_RATE="100"
+            else
+              PASS_RATE="0"
+            fi
           fi
 
+          # Debug output
+          echo "DEBUG: PASSED=$PASSED FAILED=$FAILED TOTAL=$TOTAL PASS_RATE=$PASS_RATE"
+
           # Set outputs
-          echo "status=$( [ $TEST_EXIT_CODE -eq 0 ] && echo 'passed' || echo 'failed' )" >> $GITHUB_OUTPUT
+          if [ $TEST_EXIT_CODE -eq 0 ]; then
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
           echo "pass_rate=$PASS_RATE" >> $GITHUB_OUTPUT
           echo "total_tests=$TOTAL" >> $GITHUB_OUTPUT
           echo "passed_tests=$PASSED" >> $GITHUB_OUTPUT
@@ -130,8 +151,18 @@ jobs:
           echo "coherence_score=0.92" >> $GITHUB_OUTPUT
           echo "naturalness_score=0.88" >> $GITHUB_OUTPUT
 
-          # Extract coverage percentage
-          COVERAGE=$(grep -oP 'TOTAL.*?\K\d+(?=%)' coverage.xml 2>/dev/null || echo "0")
+          # Extract coverage percentage from XML (look for line-rate attribute)
+          if [ -f coverage.xml ]; then
+            COVERAGE=$(grep -oE 'line-rate="[0-9.]+"' coverage.xml | head -1 | grep -oE '[0-9.]+' || echo "0")
+            # Convert from decimal (0.85) to percentage (85)
+            if [ -n "$COVERAGE" ] && [ "$COVERAGE" != "0" ]; then
+              COVERAGE=$(echo "scale=0; $COVERAGE * 100 / 1" | bc)
+            else
+              COVERAGE="0"
+            fi
+          else
+            COVERAGE="0"
+          fi
           echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
 
           exit $TEST_EXIT_CODE
