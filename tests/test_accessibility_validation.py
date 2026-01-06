@@ -8,6 +8,7 @@ from baml_client.types import (
     WCAGCategory,
     WCAGCriterion,
     ViolationSeverity,
+    ValidationViolationSeverity,
     ImpactedGroup,
     RemediationActionType,
     AltTextQuality,
@@ -18,6 +19,7 @@ from baml_client.types import (
     AccessibilityNeed,
     # Violations
     AccessibilityViolation,
+    ValidationAccessibilityViolation,
     RemediationAction,
     # Reports
     AccessibilityReport,
@@ -403,11 +405,11 @@ class TestAccessibilityReport:
 
     def test_report_with_violations(self) -> None:
         """Test creating report with violations."""
-        violation = AccessibilityViolation(
+        violation = ValidationAccessibilityViolation(
             rule_id="WCAG-1.1.1",
             criterion=WCAGCriterion.SC_1_1_1,
             category=WCAGCategory.PERCEIVABLE,
-            severity=ViolationSeverity.CRITICAL,
+            severity=ValidationViolationSeverity.CRITICAL,
             element="image-001",
             description="Missing alt text",
             impact="Screen readers cannot describe image",
@@ -490,11 +492,11 @@ class TestElementValidation:
 
     def test_failing_validation(self) -> None:
         """Test element with failed checks."""
-        violation = AccessibilityViolation(
+        violation = ValidationAccessibilityViolation(
             rule_id="WCAG-1.1.1",
             criterion=WCAGCriterion.SC_1_1_1,
             category=WCAGCategory.PERCEIVABLE,
-            severity=ViolationSeverity.CRITICAL,
+            severity=ValidationViolationSeverity.CRITICAL,
             element="img-001",
             description="Missing alt text",
             impact="Not accessible",
