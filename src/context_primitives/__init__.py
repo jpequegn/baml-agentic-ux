@@ -91,6 +91,40 @@ from src.context_primitives.serialization import (
     SerializerFactory,
     create_serializer,
 )
+from src.context_primitives.integration import (
+    # Result type
+    ContextualResult,
+    # Context Manager
+    ContextManager,
+    # BAML wrapper
+    ContextualBAML,
+    # Decorator (basic version)
+    with_context,
+    # Factory
+    create_context_manager,
+)
+from src.context_primitives.decorators import (
+    # Context format enum
+    ContextFormat,
+    # Metrics
+    DecoratorMetrics,
+    get_metrics,
+    clear_metrics,
+    # Core decorators
+    with_context as with_context_enhanced,
+    with_session,
+    record_turn,
+    inject_variables,
+    require_context,
+    track_metrics,
+    # Class decorator
+    contextual_class,
+    # Context manager
+    context_scope,
+    # Composition helpers
+    compose,
+    create_contextual_decorator,
+)
 
 __all__ = [
     # Enums
@@ -143,4 +177,34 @@ __all__ = [
     # Serialization - Factory
     "SerializerFactory",
     "create_serializer",
+    # Integration - Result type
+    "ContextualResult",
+    # Integration - Context Manager
+    "ContextManager",
+    # Integration - BAML wrapper
+    "ContextualBAML",
+    # Integration - Decorator
+    "with_context",
+    # Integration - Factory
+    "create_context_manager",
+    # Decorators - Enum
+    "ContextFormat",
+    # Decorators - Metrics
+    "DecoratorMetrics",
+    "get_metrics",
+    "clear_metrics",
+    # Decorators - Core
+    "with_context_enhanced",
+    "with_session",
+    "record_turn",
+    "inject_variables",
+    "require_context",
+    "track_metrics",
+    # Decorators - Class
+    "contextual_class",
+    # Decorators - Context manager
+    "context_scope",
+    # Decorators - Composition
+    "compose",
+    "create_contextual_decorator",
 ]
