@@ -461,6 +461,384 @@ class TruncationConfig {
 }
 ```
 
+## Integration Layer
+
+The integration layer provides high-level abstractions for using context primitives with BAML functions.
+
+### ContextManager
+
+Central manager for session lifecycle and context operations:
+
+```python
+from src.context_primitives import ContextManager, ContextConfig
+
+# Create manager
+config = ContextConfig(max_history_turns=20, ttl_seconds=3600)
+manager = await ContextManager.create(config)
+
+# Session operations
+session = await manager.get_or_create_session("user_123")
+context = await manager.get_context("user_123")
+
+# Record a conversation turn
+await manager.record_turn(
+    session_id="user_123",
+    user_input="Hello",
+    response="Hi there!"
+)
+```
+
+### ContextualBAML
+
+Wrapper for BAML client with automatic context injection:
+
+```python
+from src.context_primitives import ContextualBAML
+
+# Wrap your BAML client
+baml = ContextualBAML(baml_client, manager)
+
+# Call with automatic context
+result = await baml.call_with_context(
+    "ExtractIntent",
+    session_id="user_123",
+    user_input="Schedule a meeting"
+)
+
+# Access result and context
+print(result.result)  # BAML function result
+print(result.context)  # ExecutionContext used
+```
+
+### ContextualResult
+
+Wrapper for BAML results with execution context:
+
+```python
+from src.context_primitives import ContextualResult
+
+# Result includes both BAML output and context
+result: ContextualResult = await baml.call_with_context(...)
+
+# Access the BAML result
+intent = result.result.intent
+
+# Access the context used
+session_id = result.context.session.session_id
+turn_count = len(result.context.history.turns)
+```
+
+## Decorators
+
+The decorator system provides flexible ways to inject context into functions.
+
+### Basic Context Injection
+
+```python
+from src.context_primitives import with_context_enhanced, ContextFormat
+
+@with_context_enhanced(
+    manager,
+    context_format=ContextFormat.CONVERSATION,  # FULL, CONVERSATION, MINIMAL, VARIABLES_ONLY
+    create_session=True
+)
+async def process_input(session_id: str, user_input: str, context=None):
+    # context is automatically injected
+    print(f"Session: {context['session_id']}")
+    print(f"Turn count: {context['turn_count']}")
+    return f"Processed: {user_input}"
+```
+
+### Session Management
+
+```python
+from src.context_primitives import with_session
+
+@with_session(manager, touch_on_access=True)
+async def handle_request(session_id: str, user_id: str = None):
+    # Session is automatically created if needed
+    # Activity timestamp is updated
+    return "Request handled"
+```
+
+### Turn Recording
+
+```python
+from src.context_primitives import record_turn
+
+@record_turn(
+    manager,
+    user_input_param="user_input",
+    response_extractor=lambda r: r["message"],
+    component_id="chat_handler"
+)
+async def chat(session_id: str, user_input: str):
+    response = {"message": f"Reply to: {user_input}"}
+    # Turn is automatically recorded with timing
+    return response
+```
+
+### Variable Injection
+
+```python
+from src.context_primitives import inject_variables
+
+@inject_variables(
+    manager,
+    keys=["user_preference", "current_task"],
+    defaults={"user_preference": "default"}
+)
+async def get_preferences(session_id: str, variables=None):
+    # variables contains requested context variables
+    return variables.get("user_preference")
+```
+
+### Context Validation
+
+```python
+from src.context_primitives import require_context
+
+@require_context(
+    manager,
+    require_history=True,
+    min_turns=3,
+    required_variables=["user_id"]
+)
+async def continue_conversation(session_id: str):
+    # Raises ValueError if requirements not met
+    return "Continuing..."
+```
+
+### Metrics Tracking
+
+```python
+from src.context_primitives import track_metrics, get_metrics, clear_metrics
+
+@track_metrics(store_metrics=True, on_complete=lambda m: print(f"Duration: {m.duration_ms}ms"))
+async def timed_operation(session_id: str):
+    # Execution time and success/failure tracked
+    return "Done"
+
+# Retrieve collected metrics
+metrics = get_metrics()
+for m in metrics:
+    print(f"{m.function_name}: {m.duration_ms}ms, success={m.success}")
+```
+
+### Class Decorator
+
+```python
+from src.context_primitives import contextual_class
+
+@contextual_class(manager, method_prefix="handle_", exclude_methods=["internal"])
+class ChatHandler:
+    async def handle_message(self, session_id: str, text: str, context=None):
+        # context automatically injected for handle_* methods
+        return f"Handled: {text}"
+
+    async def internal(self, data):
+        # This method is not decorated
+        pass
+```
+
+### Context Scope
+
+```python
+from src.context_primitives import context_scope
+
+async def process_conversation(session_id: str):
+    async with context_scope(manager, session_id, user_id="alice") as ctx:
+        # Session is active within this scope
+        print(f"Session: {ctx.session.session_id}")
+        # Do work...
+    # Session remains active after scope (unless cleanup_on_exit=True)
+```
+
+### Decorator Composition
+
+```python
+from src.context_primitives import compose, create_contextual_decorator
+
+# Compose multiple decorators
+combined = compose(
+    with_session(manager),
+    record_turn(manager, user_input_param="text"),
+    track_metrics()
+)
+
+@combined
+async def full_handler(session_id: str, text: str):
+    return f"Handled: {text}"
+
+# Or create a custom decorator
+custom = create_contextual_decorator(
+    manager,
+    inject_context=True,
+    record_turns=True,
+    track=True,
+    context_format=ContextFormat.CONVERSATION
+)
+
+@custom
+async def custom_handler(session_id: str, user_input: str, context=None):
+    return "Custom handling"
+```
+
+## Serialization
+
+The serialization module provides efficient context serialization with multiple format support.
+
+### JSON Serialization
+
+```python
+from src.context_primitives import JSONSerializer, create_serializer
+
+# Create serializer
+serializer = JSONSerializer(indent=2)  # Pretty print
+# Or compact
+serializer = JSONSerializer()
+
+# Serialize context
+context = await manager.get_context("user_123")
+data = serializer.serialize(context)
+
+# Deserialize
+restored = serializer.deserialize(data)
+```
+
+### MessagePack Serialization
+
+3-6x faster than JSON, ~30% smaller:
+
+```python
+from src.context_primitives import MessagePackSerializer
+
+# Requires: pip install msgpack
+serializer = MessagePackSerializer()
+
+data = serializer.serialize(context)  # Binary format
+restored = serializer.deserialize(data)
+```
+
+### Compressed Serialization
+
+50-70% size reduction with gzip:
+
+```python
+from src.context_primitives import CompressedSerializer, JSONSerializer
+
+# Compressed JSON
+inner = JSONSerializer()
+serializer = CompressedSerializer(inner, compression_level=6)
+
+data = serializer.serialize(context)  # Gzip compressed
+restored = serializer.deserialize(data)
+```
+
+### Serializer Factory
+
+```python
+from src.context_primitives import SerializationFormat, create_serializer, SerializerFactory
+
+# Using factory function
+serializer = create_serializer(SerializationFormat.JSON)
+serializer = create_serializer(SerializationFormat.COMPRESSED_JSON)
+serializer = create_serializer(SerializationFormat.MSGPACK)
+
+# Using factory class with caching
+factory = SerializerFactory()
+json_ser = factory.get(SerializationFormat.JSON)  # Cached
+another = factory.get(SerializationFormat.JSON)   # Same instance
+
+# Check available formats
+formats = SerializerFactory.available_formats()
+```
+
+## History Manager
+
+Advanced history management with truncation, summarization, and importance scoring.
+
+### Token Counting
+
+```python
+from src.context_primitives import TiktokenCounter, SimpleTokenCounter
+
+# Accurate token counting (requires tiktoken)
+counter = TiktokenCounter(model="gpt-4")
+tokens = counter.count("Hello, world!")
+
+# Simple estimation (no dependencies)
+counter = SimpleTokenCounter()
+tokens = counter.count("Hello, world!")
+```
+
+### Truncation Strategies
+
+```python
+from src.context_primitives import (
+    HistoryManager,
+    TruncationStrategy,
+    TruncationConfig,
+    create_history_manager
+)
+
+# Create manager with truncation config
+config = TruncationConfig(
+    strategy=TruncationStrategy.SLIDING_WINDOW,
+    max_turns=20,
+    max_tokens=4000
+)
+
+history_manager = create_history_manager(
+    truncation_config=config,
+    token_counter=SimpleTokenCounter()
+)
+
+# Truncate history
+result = await history_manager.truncate(history)
+print(f"Kept {len(result.turns)} turns, removed {result.removed_count}")
+```
+
+### Importance Scoring
+
+```python
+from src.context_primitives import ImportanceScorer, ImportanceWeights
+
+weights = ImportanceWeights(
+    recency_weight=0.3,
+    intent_weight=0.25,
+    entity_weight=0.25,
+    confidence_weight=0.2
+)
+
+scorer = ImportanceScorer(weights)
+scores = scorer.score_turns(
+    history.turns,
+    current_intent="schedule-meeting",
+    important_entities=["meeting", "Bob"]
+)
+
+# Get top N important turns
+top_turns = scorer.get_top_turns(history.turns, n=5)
+```
+
+### Summarization
+
+```python
+from src.context_primitives import SimpleSummarizer, LLMSummarizer
+
+# Simple rule-based summarization
+summarizer = SimpleSummarizer(max_length=500)
+summary = await summarizer.summarize(history.turns)
+
+# LLM-based summarization (requires BAML client)
+summarizer = LLMSummarizer(baml_client)
+summary = await summarizer.summarize(
+    history.turns,
+    existing_summary=history.summary
+)
+```
+
 ## Best Practices
 
 1. **Session Management**
@@ -482,6 +860,17 @@ class TruncationConfig {
    - Use Redis for production hot storage
    - Archive to PostgreSQL for persistence
    - Consider HYBRID backend for best of both
+
+5. **Decorators**
+   - Use `with_context_enhanced` for simple context injection
+   - Use `record_turn` to automatically track conversations
+   - Compose decorators for complex workflows
+   - Use `track_metrics` in production for monitoring
+
+6. **Serialization**
+   - Use JSON for debugging and human-readable storage
+   - Use MessagePack for performance-critical paths
+   - Use compression for large contexts or bandwidth constraints
 
 ## Related Documentation
 
