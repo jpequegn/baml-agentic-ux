@@ -400,7 +400,9 @@ class TestCLIRun:
 
     def test_run_help(self):
         """Test run command help."""
-        result = runner.invoke(app, ["run", "--help"])
+        # Use wide terminal to ensure all options are visible in help output
+        wide_runner = CliRunner(env={"COLUMNS": "200"})
+        result = wide_runner.invoke(app, ["run", "--help"])
         assert result.exit_code == 0
         assert "--parallel" in result.stdout
         assert "--timeout" in result.stdout
