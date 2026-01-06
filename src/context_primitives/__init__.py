@@ -78,6 +78,19 @@ from src.context_primitives.history_manager import (
     HistoryManager,
     create_history_manager,
 )
+from src.context_primitives.serialization import (
+    # Serialization formats
+    SerializationFormat,
+    # Abstract serializer
+    ContextSerializer,
+    # Concrete serializers
+    JSONSerializer,
+    MessagePackSerializer,
+    CompressedSerializer,
+    # Factory
+    SerializerFactory,
+    create_serializer,
+)
 
 __all__ = [
     # Enums
@@ -119,4 +132,15 @@ __all__ = [
     # History Manager - Main class
     "HistoryManager",
     "create_history_manager",
+    # Serialization - Formats
+    "SerializationFormat",
+    # Serialization - Abstract
+    "ContextSerializer",
+    # Serialization - Concrete serializers
+    "JSONSerializer",
+    "MessagePackSerializer",
+    "CompressedSerializer",
+    # Serialization - Factory
+    "SerializerFactory",
+    "create_serializer",
 ]
