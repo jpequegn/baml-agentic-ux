@@ -14,19 +14,25 @@
 /// Severity levels for accessibility violations
 enum ViolationSeverity {
   CRITICAL @description("Blocks accessibility - weight: 0.25")
-  MAJOR @description("Significant impact - weight: 0.15")
-  MINOR @description("Reduces usability - weight: 0.05")
-  ADVISORY @description("Suggestions for improvement - weight: 0.02")
+  SERIOUS @description("Significant impact - weight: 0.15")
+  MODERATE @description("Reduces usability - weight: 0.08")
+  MINOR @description("Suggestions for improvement - weight: 0.03")
 }
 
 /// A single accessibility violation found in a response
 class AccessibilityViolation {
-  criterion string @description("Criterion reference (e.g., 'A.1.1', 'AA.3.1')")
+  rule_id string @description("WCAG rule identifier (e.g., WCAG-1.1.1)")
+  criterion WCAGCriterion @description("Specific WCAG success criterion")
+  category WCAGCategory @description("WCAG category")
   severity ViolationSeverity @description("Severity of this violation")
+  element string @description("Element or component with violation")
+  element_type string? @description("Type of element (image, button, etc.)")
   description string @description("Human-readable description of the issue")
+  impact string @description("Impact on users")
+  impacted_groups ImpactedGroup[] @description("User groups affected")
   remediation string @description("Suggested fix for the issue")
-  element string? @description("Specific text that caused the violation")
-  line_number int? @description("Line or sentence number if applicable")
+  code_example string? @description("Example of correct implementation")
+  wcag_reference string? @description("Link to WCAG documentation")
 }
 
 // ============================================

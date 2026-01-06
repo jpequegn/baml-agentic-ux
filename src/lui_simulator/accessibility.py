@@ -13,7 +13,6 @@ from baml_client.types import (
     AccessibilityProfile,
     AccessibilityReport,
     AccessibilityRequirements,
-    AccessibilityViolation,
     ActionElementValidation,
     CategoryScores,
     CognitiveLoad,
@@ -28,7 +27,8 @@ from baml_client.types import (
     RemediationActionType,
     ReportSummary,
     UserAccessibilityCheck,
-    ViolationSeverity,
+    ValidationAccessibilityViolation,
+    ValidationViolationSeverity,
     VisualElementValidation,
     VoiceElementValidation,
     VoiceResponse,
@@ -193,7 +193,7 @@ def check_accessibility_for_user(
     ).violations
 
     for v in req_violations:
-        if v.severity in [ViolationSeverity.CRITICAL, ViolationSeverity.SERIOUS]:
+        if v.severity in [ValidationViolationSeverity.CRITICAL, ValidationViolationSeverity.SERIOUS]:
             blockers.append(v.description)
 
     accessible = len(blockers) == 0
@@ -245,11 +245,11 @@ def validate_visual_element(
         alt_text_quality = _assess_alt_text_quality(element.alt_text)
     else:
         failed_checks.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="WCAG-1.1.1",
                 criterion=WCAGCriterion.SC_1_1_1,
                 category=WCAGCategory.PERCEIVABLE,
-                severity=ViolationSeverity.CRITICAL,
+                severity=ValidationViolationSeverity.CRITICAL,
                 element=element_id,
                 element_type=element_type_str,
                 description="Visual element missing alt text",
@@ -301,11 +301,11 @@ def validate_voice_element(
         passed_checks.append("Has text fallback")
     else:
         failed_checks.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="WCAG-1.1.1",
                 criterion=WCAGCriterion.SC_1_1_1,
                 category=WCAGCategory.PERCEIVABLE,
-                severity=ViolationSeverity.CRITICAL,
+                severity=ValidationViolationSeverity.CRITICAL,
                 element="voice_response",
                 description="Voice response has no text fallback",
                 impact="Deaf or hard of hearing users cannot access this content",
@@ -323,11 +323,11 @@ def validate_voice_element(
         passed_checks.append("Language specified")
     else:
         failed_checks.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="WCAG-3.1.1",
                 criterion=WCAGCriterion.SC_3_1_1,
                 category=WCAGCategory.UNDERSTANDABLE,
-                severity=ViolationSeverity.SERIOUS,
+                severity=ValidationViolationSeverity.SERIOUS,
                 element="voice_response",
                 description="Voice response language not specified",
                 impact="Screen readers may mispronounce content",
@@ -381,11 +381,11 @@ def validate_action_element(
         passed_checks.append("Clear action label")
     else:
         failed_checks.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="WCAG-2.4.4",
                 criterion=WCAGCriterion.SC_2_4_4,
                 category=WCAGCategory.OPERABLE,
-                severity=ViolationSeverity.SERIOUS,
+                severity=ValidationViolationSeverity.SERIOUS,
                 element=action.action_id,
                 element_type="action",
                 description=f"Action label is not descriptive: '{action.label}'",
@@ -438,11 +438,11 @@ def _check_perceivable(
         for element in response.visuals:
             if not element.alt_text:
                 violations.append(
-                    AccessibilityViolation(
+                    ValidationAccessibilityViolation(
                         rule_id="WCAG-1.1.1",
                         criterion=WCAGCriterion.SC_1_1_1,
                         category=WCAGCategory.PERCEIVABLE,
-                        severity=ViolationSeverity.CRITICAL,
+                        severity=ValidationViolationSeverity.CRITICAL,
                         element=f"visual_{element.element_type.value if hasattr(element.element_type, 'value') else str(element.element_type)}",
                         element_type=element.element_type.value if hasattr(element.element_type, 'value') else str(element.element_type),
                         description="Visual element missing alternative text",
@@ -458,11 +458,11 @@ def _check_perceivable(
     # Voice without text fallback
     if response.voice and not response.text:
         violations.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="WCAG-1.1.1",
                 criterion=WCAGCriterion.SC_1_1_1,
                 category=WCAGCategory.PERCEIVABLE,
-                severity=ViolationSeverity.CRITICAL,
+                severity=ValidationViolationSeverity.CRITICAL,
                 element="voice_response",
                 description="Voice response has no text fallback",
                 impact="Deaf or hard of hearing users cannot access this content",
@@ -477,11 +477,11 @@ def _check_perceivable(
     # 1.3.1: Info and Relationships
     if not response.accessibility.supports_screen_reader and requirements.screen_reader_support:
         violations.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="WCAG-1.3.1",
                 criterion=WCAGCriterion.SC_1_3_1,
                 category=WCAGCategory.PERCEIVABLE,
-                severity=ViolationSeverity.SERIOUS,
+                severity=ValidationViolationSeverity.SERIOUS,
                 element="response",
                 description="Response not optimized for screen readers",
                 impact="Screen reader users may miss structural information",
@@ -493,11 +493,11 @@ def _check_perceivable(
     # High contrast check
     if requirements.high_contrast and not response.accessibility.high_contrast_available:
         violations.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="WCAG-1.4.3",
                 criterion=WCAGCriterion.SC_1_4_3,
                 category=WCAGCategory.PERCEIVABLE,
-                severity=ViolationSeverity.SERIOUS,
+                severity=ValidationViolationSeverity.SERIOUS,
                 element="response",
                 description="High contrast mode not available",
                 impact="Users with low vision may struggle to read content",
@@ -521,11 +521,11 @@ def _check_operable(
         keyboard_only = getattr(requirements, 'keyboard_only', False)
         if keyboard_only:
             violations.append(
-                AccessibilityViolation(
+                ValidationAccessibilityViolation(
                     rule_id="WCAG-2.1.1",
                     criterion=WCAGCriterion.SC_2_1_1,
                     category=WCAGCategory.OPERABLE,
-                    severity=ViolationSeverity.CRITICAL,
+                    severity=ValidationViolationSeverity.CRITICAL,
                     element="response",
                     description="Response not keyboard navigable",
                     impact="Keyboard-only users cannot interact with this content",
@@ -539,11 +539,11 @@ def _check_operable(
         for action in response.actions:
             if len(action.label) < 2:
                 violations.append(
-                    AccessibilityViolation(
+                    ValidationAccessibilityViolation(
                         rule_id="WCAG-2.4.4",
                         criterion=WCAGCriterion.SC_2_4_4,
                         category=WCAGCategory.OPERABLE,
-                        severity=ViolationSeverity.SERIOUS,
+                        severity=ValidationViolationSeverity.SERIOUS,
                         element=action.action_id,
                         element_type="action",
                         description=f"Action label too short: '{action.label}'",
@@ -556,11 +556,11 @@ def _check_operable(
     # Check action count (usability, not strict WCAG)
     if response.actions and len(response.actions) > 4:
         violations.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="BEST-PRACTICE-ACTIONS",
                 criterion=WCAGCriterion.SC_2_4_6,
                 category=WCAGCategory.OPERABLE,
-                severity=ViolationSeverity.MINOR,
+                severity=ValidationViolationSeverity.MINOR,
                 element="actions",
                 description=f"Too many actions ({len(response.actions)} > 4 recommended)",
                 impact="May overwhelm users with cognitive disabilities",
@@ -582,11 +582,11 @@ def _check_understandable(
     # 3.1.1: Language of Page
     if response.voice and not response.voice.language:
         violations.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="WCAG-3.1.1",
                 criterion=WCAGCriterion.SC_3_1_1,
                 category=WCAGCategory.UNDERSTANDABLE,
-                severity=ViolationSeverity.SERIOUS,
+                severity=ValidationViolationSeverity.SERIOUS,
                 element="voice_response",
                 description="Voice response language not specified",
                 impact="Screen readers may mispronounce content",
@@ -602,11 +602,11 @@ def _check_understandable(
             CognitiveLoad.VERY_HIGH,
         ]:
             violations.append(
-                AccessibilityViolation(
+                ValidationAccessibilityViolation(
                     rule_id="WCAG-3.1.5",
                     criterion=WCAGCriterion.SC_3_1_2,
                     category=WCAGCategory.UNDERSTANDABLE,
-                    severity=ViolationSeverity.MODERATE,
+                    severity=ValidationViolationSeverity.MODERATE,
                     element="response",
                     description=f"High cognitive load ({response.accessibility.cognitive_load.value})",
                     impact="May exclude users with cognitive disabilities",
@@ -628,11 +628,11 @@ def _check_robust(
     # 4.1.2: Name, Role, Value
     if not response.accessibility.aria_label:
         violations.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="WCAG-4.1.2",
                 criterion=WCAGCriterion.SC_4_1_2,
                 category=WCAGCategory.ROBUST,
-                severity=ViolationSeverity.MODERATE,
+                severity=ValidationViolationSeverity.MODERATE,
                 element="response",
                 description="Response missing ARIA label",
                 impact="Assistive technologies may not properly identify this content",
@@ -645,11 +645,11 @@ def _check_robust(
     from baml_client.types import AriaLiveType
     if response.accessibility.aria_live == AriaLiveType.OFF:
         violations.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="WCAG-4.1.3",
                 criterion=WCAGCriterion.SC_4_1_3,
                 category=WCAGCategory.ROBUST,
-                severity=ViolationSeverity.MODERATE,
+                severity=ValidationViolationSeverity.MODERATE,
                 element="response",
                 description="ARIA live region not configured",
                 impact="Screen reader users may miss dynamic updates",
@@ -675,11 +675,11 @@ def _check_voice_specific(
     if response.voice.ssml:
         if "<break" not in response.voice.ssml:
             violations.append(
-                AccessibilityViolation(
+                ValidationAccessibilityViolation(
                     rule_id="VOICE-PAUSES",
                     criterion=WCAGCriterion.SC_1_2_1,
                     category=WCAGCategory.PERCEIVABLE,
-                    severity=ViolationSeverity.MINOR,
+                    severity=ValidationViolationSeverity.MINOR,
                     element="voice_ssml",
                     description="Voice response lacks SSML pauses",
                     impact="Content may be difficult to follow",
@@ -692,11 +692,11 @@ def _check_voice_specific(
     estimated_duration = _estimate_voice_duration(response.voice.text)
     if estimated_duration > 30:
         violations.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="VOICE-DURATION",
                 criterion=WCAGCriterion.SC_2_2_1,
                 category=WCAGCategory.OPERABLE,
-                severity=ViolationSeverity.MODERATE,
+                severity=ValidationViolationSeverity.MODERATE,
                 element="voice_response",
                 description=f"Voice response may be too long (~{estimated_duration:.0f}s)",
                 impact="Users may lose track of content",
@@ -708,11 +708,11 @@ def _check_voice_specific(
     # Reduced motion check
     if requirements.reduced_motion and not response.accessibility.reduced_motion_safe:
         violations.append(
-            AccessibilityViolation(
+            ValidationAccessibilityViolation(
                 rule_id="WCAG-2.3.1",
                 criterion=WCAGCriterion.SC_2_3_1,
                 category=WCAGCategory.OPERABLE,
-                severity=ViolationSeverity.SERIOUS,
+                severity=ValidationViolationSeverity.SERIOUS,
                 element="response",
                 description="Response not marked as reduced motion safe",
                 impact="May trigger vestibular disorders",
@@ -779,10 +779,10 @@ def _calculate_category_scores(
 
     # Weight violations by severity
     severity_weights = {
-        ViolationSeverity.CRITICAL: 25,
-        ViolationSeverity.SERIOUS: 15,
-        ViolationSeverity.MODERATE: 8,
-        ViolationSeverity.MINOR: 3,
+        ValidationViolationSeverity.CRITICAL: 25,
+        ValidationViolationSeverity.SERIOUS: 15,
+        ValidationViolationSeverity.MODERATE: 8,
+        ValidationViolationSeverity.MINOR: 3,
     }
 
     for v in violations:
@@ -832,14 +832,14 @@ def _is_compliant(
 
     # Check critical violations
     critical_count = sum(
-        1 for v in violations if v.severity == ViolationSeverity.CRITICAL
+        1 for v in violations if v.severity == ValidationViolationSeverity.CRITICAL
     )
     if critical_count > 0 and not reqs["allow_critical"]:
         return False
 
     # Check serious violations
     serious_count = sum(
-        1 for v in violations if v.severity == ViolationSeverity.SERIOUS
+        1 for v in violations if v.severity == ValidationViolationSeverity.SERIOUS
     )
     if serious_count > 0 and not reqs["allow_serious"]:
         return False
@@ -863,10 +863,10 @@ def _generate_summary(
     score: float,
 ) -> ReportSummary:
     """Generate summary of accessibility findings."""
-    critical = sum(1 for v in violations if v.severity == ViolationSeverity.CRITICAL)
-    serious = sum(1 for v in violations if v.severity == ViolationSeverity.SERIOUS)
-    moderate = sum(1 for v in violations if v.severity == ViolationSeverity.MODERATE)
-    minor = sum(1 for v in violations if v.severity == ViolationSeverity.MINOR)
+    critical = sum(1 for v in violations if v.severity == ValidationViolationSeverity.CRITICAL)
+    serious = sum(1 for v in violations if v.severity == ValidationViolationSeverity.SERIOUS)
+    moderate = sum(1 for v in violations if v.severity == ValidationViolationSeverity.MODERATE)
+    minor = sum(1 for v in violations if v.severity == ValidationViolationSeverity.MINOR)
 
     # Calculate pass rate (assuming ~20 checks per category)
     total_checks = 20
@@ -874,7 +874,7 @@ def _generate_summary(
 
     # Identify primary issues
     primary_issues = list(
-        set(v.description for v in violations if v.severity in [ViolationSeverity.CRITICAL, ViolationSeverity.SERIOUS])
+        set(v.description for v in violations if v.severity in [ValidationViolationSeverity.CRITICAL, ValidationViolationSeverity.SERIOUS])
     )[:5]
 
     # Identify strengths
@@ -886,11 +886,11 @@ def _generate_summary(
 
     # Priority recommendations
     recommendations = list(
-        set(v.remediation for v in violations if v.severity == ViolationSeverity.CRITICAL)
+        set(v.remediation for v in violations if v.severity == ValidationViolationSeverity.CRITICAL)
     )[:3]
     if not recommendations:
         recommendations = list(
-            set(v.remediation for v in violations if v.severity == ViolationSeverity.SERIOUS)
+            set(v.remediation for v in violations if v.severity == ValidationViolationSeverity.SERIOUS)
         )[:3]
 
     return ReportSummary(
@@ -931,9 +931,9 @@ def _generate_remediations(
     for v in sorted(
         violations,
         key=lambda x: (
-            0 if x.severity == ViolationSeverity.CRITICAL else
-            1 if x.severity == ViolationSeverity.SERIOUS else
-            2 if x.severity == ViolationSeverity.MODERATE else 3
+            0 if x.severity == ValidationViolationSeverity.CRITICAL else
+            1 if x.severity == ValidationViolationSeverity.SERIOUS else
+            2 if x.severity == ValidationViolationSeverity.MODERATE else 3
         ),
     ):
         # Determine action type
@@ -945,9 +945,9 @@ def _generate_remediations(
 
         # Determine effort
         effort = EffortLevel.TRIVIAL
-        if v.severity == ViolationSeverity.CRITICAL:
+        if v.severity == ValidationViolationSeverity.CRITICAL:
             effort = EffortLevel.LOW
-        elif v.severity == ViolationSeverity.SERIOUS:
+        elif v.severity == ValidationViolationSeverity.SERIOUS:
             effort = EffortLevel.MEDIUM
 
         remediations.append(
