@@ -15,6 +15,13 @@ from .simulator import LUISimulator, load_schema_from_dict
 from .context import SimulatorConfig, SimulatorMode
 from baml_client.types import ResponseTone, FormalityLevel, ExpertiseLevel
 
+# Import schema import functionality
+from lui_schema_import import (
+    import_json_schema,
+    import_yaml_schema,
+    generate_baml_types,
+)
+
 app = typer.Typer(
     name="lui-sim",
     help="Interactive LUI Simulator - Test Language User Interface schemas",
@@ -280,6 +287,116 @@ def _show_components_table(components) -> None:
         )
 
     console.print(table)
+
+
+@app.command(name="import")
+def import_schema(
+    source_path: str = typer.Argument(..., help="Path to JSON Schema or OpenAPI/YAML file"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output file path (defaults to stdout)"),
+    format: str = typer.Option("lui", "--format", "-f", help="Output format: lui (InterfaceSchema JSON), baml (BAML types)"),
+    domain: str = typer.Option("imported", "--domain", "-d", help="Domain name for the imported schema"),
+    schema_id: Optional[str] = typer.Option(None, "--id", help="Schema ID (auto-generated if not provided)"),
+):
+    """Import a JSON Schema or OpenAPI/YAML file into LUI format.
+
+    Supports:
+    - JSON Schema (draft-07 and later)
+    - OpenAPI 3.x specifications (YAML or JSON)
+    - Custom YAML schema definitions
+
+    Examples:
+        # Import JSON Schema and output LUI schema
+        lui-sim import api/schema.json -o lui_schema.json
+
+        # Import OpenAPI spec and generate BAML types
+        lui-sim import api/openapi.yaml -f baml -o types.baml
+
+        # Import and view without saving
+        lui-sim import schema.json
+    """
+    source = Path(source_path)
+
+    if not source.exists():
+        console.print(f"[red]Error: File not found: {source_path}[/red]")
+        raise typer.Exit(1)
+
+    try:
+        # Determine file type and import
+        suffix = source.suffix.lower()
+
+        if suffix in (".yaml", ".yml"):
+            console.print(f"[dim]Importing YAML schema from {source_path}...[/dim]")
+            lui_schema = import_yaml_schema(source, schema_id=schema_id, domain_name=domain)
+        else:
+            console.print(f"[dim]Importing JSON Schema from {source_path}...[/dim]")
+            lui_schema = import_json_schema(source, schema_id=schema_id, domain_name=domain)
+
+        # Generate output based on format
+        if format.lower() == "baml":
+            output_content = generate_baml_types(lui_schema)
+            file_ext = ".baml"
+        else:
+            # Default to LUI/JSON format
+            output_content = json.dumps(_schema_to_dict(lui_schema), indent=2)
+            file_ext = ".json"
+
+        # Output results
+        if output:
+            output_path = Path(output)
+            with open(output_path, "w") as f:
+                f.write(output_content)
+            console.print(f"[green]✓ Schema imported successfully to: {output_path}[/green]")
+        else:
+            # Print to stdout
+            console.print(Panel(output_content, title=f"Imported Schema ({format.upper()})"))
+
+        # Show summary
+        console.print(f"\n[bold]Import Summary:[/bold]")
+        console.print(f"  Schema ID: [cyan]{lui_schema.schema_id}[/cyan]")
+        console.print(f"  Name: [green]{lui_schema.name}[/green]")
+        console.print(f"  Components: [yellow]{len(lui_schema.components)}[/yellow]")
+        if lui_schema.components:
+            for comp in lui_schema.components[:5]:  # Show first 5
+                console.print(f"    - {comp.component_id} ({comp.component_type.value})")
+            if len(lui_schema.components) > 5:
+                console.print(f"    ... and {len(lui_schema.components) - 5} more")
+
+    except ImportError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        console.print("[dim]Hint: Install PyYAML for YAML support: pip install pyyaml[/dim]")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error importing schema: {e}[/red]")
+        raise typer.Exit(1)
+
+
+def _schema_to_dict(schema) -> dict:
+    """Convert InterfaceSchema to a dictionary for JSON output."""
+    # Use Pydantic's model_dump if available
+    if hasattr(schema, "model_dump"):
+        return schema.model_dump(mode="json")
+    elif hasattr(schema, "dict"):
+        return schema.dict()
+    else:
+        # Manual conversion fallback
+        return {
+            "schema_id": schema.schema_id,
+            "name": schema.name,
+            "description": schema.description,
+            "version": schema.version,
+            "domain": {
+                "domain_name": schema.domain.domain_name,
+                "description": schema.domain.description,
+            } if schema.domain else None,
+            "components": [
+                {
+                    "component_id": c.component_id,
+                    "component_type": c.component_type.value,
+                    "intent": c.intent,
+                }
+                for c in schema.components
+            ],
+        }
 
 
 @app.command()
