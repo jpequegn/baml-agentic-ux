@@ -17,7 +17,7 @@ from baml_client.types import (
     MultiIntentExtraction,
     ExecutionStrategy,
     IntentDependency,
-    DependencyType,
+    IntentDependencyType,
     # Routing types
     RoutingResult,
     ComponentMatch,
@@ -80,13 +80,13 @@ class TestExecutionStrategyEnum:
         assert actual == expected
 
 
-class TestDependencyTypeEnum:
-    """Test DependencyType enum values."""
+class TestIntentDependencyTypeEnum:
+    """Test IntentDependencyType enum values."""
 
-    def test_dependency_type_values(self):
-        """Verify all dependency types exist."""
+    def test_intent_dependency_type_values(self):
+        """Verify all intent dependency types exist."""
         expected = {"REQUIRES_COMPLETION", "REQUIRES_SUCCESS", "SHARES_PARAMETER"}
-        actual = {d.name for d in DependencyType}
+        actual = {d.name for d in IntentDependencyType}
         assert actual == expected
 
 
@@ -338,7 +338,7 @@ class TestMultiIntentExtraction:
         dependency = IntentDependency(
             dependent_intent_index=1,
             depends_on_index=0,
-            dependency_type=DependencyType.REQUIRES_SUCCESS,
+            dependency_type=IntentDependencyType.REQUIRES_SUCCESS,
         )
 
         multi = MultiIntentExtraction(
@@ -351,7 +351,7 @@ class TestMultiIntentExtraction:
         assert multi.execution_strategy == ExecutionStrategy.SEQUENTIAL
         assert multi.dependencies is not None
         assert len(multi.dependencies) == 1
-        assert multi.dependencies[0].dependency_type == DependencyType.REQUIRES_SUCCESS
+        assert multi.dependencies[0].dependency_type == IntentDependencyType.REQUIRES_SUCCESS
 
     def test_create_parallel_multi_intent(self):
         """Test creating a parallel multi-intent extraction."""

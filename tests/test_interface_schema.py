@@ -31,7 +31,7 @@ from baml_client.types import (
     EntityAttribute,
     AttributeType,
     AttributeConstraint,
-    ConstraintType,
+    EntityConstraintType,
     AttributeDisplayConfig,
     InputType,
     EntityRelationship,
@@ -308,12 +308,12 @@ class TestEntityDefinition:
                 default_value=None,
                 constraints=[
                     AttributeConstraint(
-                        constraint_type=ConstraintType.MIN_LENGTH,
+                        constraint_type=EntityConstraintType.MIN_LENGTH,
                         value="2",
                         error_message="Name must be at least 2 characters",
                     ),
                     AttributeConstraint(
-                        constraint_type=ConstraintType.MAX_LENGTH,
+                        constraint_type=EntityConstraintType.MAX_LENGTH,
                         value="100",
                         error_message="Name cannot exceed 100 characters",
                     ),
@@ -344,7 +344,7 @@ class TestEntityDefinition:
                 default_value="active",
                 constraints=[
                     AttributeConstraint(
-                        constraint_type=ConstraintType.ENUM_VALUES,
+                        constraint_type=EntityConstraintType.ENUM_VALUES,
                         value="active,inactive,suspended",
                         error_message="Invalid status value",
                     )
