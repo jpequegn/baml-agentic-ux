@@ -4,12 +4,17 @@ Tests the actual command-line interface using subprocess to invoke
 python -m src.cli and verify behavior.
 """
 
+import shutil
 import subprocess
 import sys
 import tempfile
+import uuid
 from pathlib import Path
 
 import pytest
+
+# Determine project root dynamically for portability
+PROJECT_ROOT = Path(__file__).parent.parent
 
 
 class TestCLIListTemplates:
@@ -21,7 +26,7 @@ class TestCLIListTemplates:
             [sys.executable, "-m", "src.cli", "--list"],
             capture_output=True,
             text=True,
-            cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+            cwd=PROJECT_ROOT
         )
 
         assert result.returncode == 0, f"CLI should exit with code 0, got {result.returncode}"
@@ -39,7 +44,7 @@ class TestCLIListTemplates:
             [sys.executable, "-m", "src.cli", "--list"],
             capture_output=True,
             text=True,
-            cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+            cwd=PROJECT_ROOT
         )
 
         assert result.returncode == 0
@@ -65,7 +70,7 @@ class TestCLIScaffold:
                  "--output", str(output_dir)],
                 capture_output=True,
                 text=True,
-                cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                cwd=PROJECT_ROOT
             )
 
             assert result.returncode == 0, f"Scaffold should succeed, got: {result.stderr}"
@@ -89,7 +94,7 @@ class TestCLIScaffold:
                  "--output", str(output_dir)],
                 capture_output=True,
                 text=True,
-                cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                cwd=PROJECT_ROOT
             )
 
             assert result.returncode == 0
@@ -123,7 +128,7 @@ class TestCLIScaffold:
                      "--output", str(output_dir)],
                     capture_output=True,
                     text=True,
-                    cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                    cwd=PROJECT_ROOT
                 )
 
                 assert result.returncode == 0, f"{template} template should scaffold successfully"
@@ -149,7 +154,7 @@ class TestCLIScaffold:
                  "--force"],
                 capture_output=True,
                 text=True,
-                cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                cwd=PROJECT_ROOT
             )
 
             assert result.returncode == 0, "Force flag should allow overwriting"
@@ -171,7 +176,7 @@ class TestCLIScaffold:
                  "--output", str(output_dir)],
                 capture_output=True,
                 text=True,
-                cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                cwd=PROJECT_ROOT
             )
 
             assert result.returncode != 0, "Should fail when directory exists without --force"
@@ -192,7 +197,7 @@ class TestCLIErrorHandling:
                  "--output", tmpdir],
                 capture_output=True,
                 text=True,
-                cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                cwd=PROJECT_ROOT
             )
 
             assert result.returncode != 0, "Invalid template should cause non-zero exit"
@@ -219,7 +224,7 @@ class TestCLIErrorHandling:
                 text=True,
                 input="",  # Send EOF to interactive prompts
                 timeout=5,
-                cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                cwd=PROJECT_ROOT
             )
 
             # Should fail cleanly when interactive mode gets EOF
@@ -245,7 +250,7 @@ class TestCLIShortFlags:
                  "-f"],
                 capture_output=True,
                 text=True,
-                cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                cwd=PROJECT_ROOT
             )
 
             assert result.returncode == 0, "Short flags should work the same as long flags"
@@ -270,7 +275,7 @@ class TestCLIOutputValidation:
                  "--output", str(output_dir)],
                 capture_output=True,
                 text=True,
-                cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                cwd=PROJECT_ROOT
             )
 
             assert result.returncode == 0
@@ -292,7 +297,7 @@ class TestCLIOutputValidation:
                  "--output", str(output_dir)],
                 capture_output=True,
                 text=True,
-                cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                cwd=PROJECT_ROOT
             )
 
             assert result.returncode == 0
@@ -312,7 +317,7 @@ class TestCLIOutputValidation:
                  "--output", str(output_dir)],
                 capture_output=True,
                 text=True,
-                cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                cwd=PROJECT_ROOT
             )
 
             assert result.returncode == 0
@@ -332,7 +337,6 @@ class TestCLIDefaultOutput:
         # We'll just verify the behavior by checking error messages
 
         # Create a unique project name that's unlikely to exist
-        import uuid
         project_name = f"test_temp_{uuid.uuid4().hex[:8]}"
 
         try:
@@ -343,7 +347,7 @@ class TestCLIDefaultOutput:
                 capture_output=True,
                 text=True,
                 timeout=5,
-                cwd="/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates"
+                cwd=PROJECT_ROOT
             )
 
             # Should either succeed (creating ./<project_name>) or fail gracefully
@@ -355,7 +359,6 @@ class TestCLIDefaultOutput:
 
         finally:
             # Clean up if directory was created
-            cleanup_dir = Path("/Users/julienmika/Code/baml-agentic-ux/.worktrees/lui-templates") / project_name
+            cleanup_dir = PROJECT_ROOT / project_name
             if cleanup_dir.exists():
-                import shutil
                 shutil.rmtree(cleanup_dir)
