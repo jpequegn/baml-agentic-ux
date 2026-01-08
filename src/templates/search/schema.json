@@ -1,0 +1,219 @@
+{
+  "schema_id": "{{SCHEMA_ID}}",
+  "name": "{{PROJECT_NAME_TITLE}} LUI",
+  "description": "A Language User Interface for {{PROJECT_NAME_TITLE}}",
+  "version": "1.0.0",
+  "domain": {
+    "domain_name": "{{PROJECT_NAME}}",
+    "subdomain": "search-and-discovery",
+    "description": "Search and discovery operations demonstrating LUI patterns",
+    "key_concepts": ["search", "filters", "sorting", "pagination", "discovery"]
+  },
+  "components": [
+    {
+      "component_id": "search-items",
+      "component_type": "QUERY",
+      "intent": "Search for items matching criteria",
+      "description": "Demonstrates QUERY component with search parameters including query text, filters, and pagination",
+      "invocation": {
+        "primary_phrase": "search items",
+        "alternate_phrases": ["find items", "search for", "look for items"],
+        "examples": [
+          "Search for laptops",
+          "Find items matching wireless mouse",
+          "Look for items under $50",
+          "Search items in electronics category"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "query",
+          "type": "string",
+          "required": true,
+          "description": "Search query text"
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "required": false,
+          "description": "Filter by category"
+        },
+        {
+          "name": "max_price",
+          "type": "number",
+          "required": false,
+          "description": "Maximum price filter"
+        },
+        {
+          "name": "min_price",
+          "type": "number",
+          "required": false,
+          "description": "Minimum price filter"
+        },
+        {
+          "name": "page",
+          "type": "number",
+          "required": false,
+          "description": "Page number for pagination (default: 1)"
+        },
+        {
+          "name": "page_size",
+          "type": "number",
+          "required": false,
+          "description": "Number of results per page (default: 20)"
+        }
+      ],
+      "feedback": {
+        "success_template": "Found {result_count} items matching '{query}'",
+        "error_template": "Could not search: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "filter-results",
+      "component_type": "ACTION",
+      "intent": "Apply filters to refine search results",
+      "description": "Demonstrates faceted filtering for narrowing search results",
+      "invocation": {
+        "primary_phrase": "filter results",
+        "alternate_phrases": ["narrow down", "refine search", "filter by"],
+        "examples": [
+          "Filter results by electronics",
+          "Narrow down to items under $100",
+          "Refine search to show only available items",
+          "Filter by price range $50-$200"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "category",
+          "type": "string",
+          "required": false,
+          "description": "Category filter"
+        },
+        {
+          "name": "price_range",
+          "type": "string",
+          "required": false,
+          "description": "Price range (e.g., '$50-$200')"
+        },
+        {
+          "name": "availability",
+          "type": "boolean",
+          "required": false,
+          "description": "Show only available items"
+        },
+        {
+          "name": "rating",
+          "type": "number",
+          "required": false,
+          "description": "Minimum rating (1-5 stars)"
+        }
+      ],
+      "feedback": {
+        "success_template": "Applied filters, showing {result_count} results",
+        "error_template": "Could not apply filters: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "sort-results",
+      "component_type": "ACTION",
+      "intent": "Sort search results by different criteria",
+      "description": "Demonstrates sorting functionality for search results",
+      "invocation": {
+        "primary_phrase": "sort results",
+        "alternate_phrases": ["sort by", "order by", "arrange by"],
+        "examples": [
+          "Sort results by price",
+          "Order by newest first",
+          "Sort by relevance",
+          "Arrange by rating highest to lowest"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "sort_by",
+          "type": "string",
+          "required": true,
+          "description": "Field to sort by (relevance, price, date, rating, name)"
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "required": false,
+          "description": "Sort order: 'asc' or 'desc' (default: desc for relevance/rating, asc for price/name)"
+        }
+      ],
+      "feedback": {
+        "success_template": "Sorted results by {sort_by} ({order})",
+        "error_template": "Could not sort results: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "paginate",
+      "component_type": "ACTION",
+      "intent": "Navigate through paginated search results",
+      "description": "Demonstrates pagination controls for search results",
+      "invocation": {
+        "primary_phrase": "next page",
+        "alternate_phrases": ["previous page", "go to page", "page"],
+        "examples": [
+          "Show next page",
+          "Go to previous page",
+          "Jump to page 5",
+          "Show page 3 of results"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "action",
+          "type": "string",
+          "required": true,
+          "description": "Pagination action: 'next', 'previous', or 'goto'"
+        },
+        {
+          "name": "page_number",
+          "type": "number",
+          "required": false,
+          "description": "Specific page number for 'goto' action"
+        }
+      ],
+      "feedback": {
+        "success_template": "Showing page {current_page} of {total_pages}",
+        "error_template": "Could not navigate: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "view-details",
+      "component_type": "QUERY",
+      "intent": "View detailed information about a specific item from search results",
+      "description": "Demonstrates drilling down from search results to item details",
+      "invocation": {
+        "primary_phrase": "view details",
+        "alternate_phrases": ["show details", "more info", "tell me more about"],
+        "examples": [
+          "View details for item 123",
+          "Show me more info about that item",
+          "Tell me more about the first result",
+          "What are the details of this item?"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "item_id",
+          "type": "string",
+          "required": true,
+          "description": "ID or reference to the item (supports 'first', 'last', or numeric ID)"
+        }
+      ],
+      "feedback": {
+        "success_template": "Here are the details for {item_name}",
+        "error_template": "Could not load details: {error}",
+        "confirmation_required": false
+      }
+    }
+  ]
+}
