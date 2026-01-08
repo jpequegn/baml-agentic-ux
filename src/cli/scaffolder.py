@@ -33,3 +33,19 @@ def build_substitutions(project_name: str) -> dict[str, Any]:
         "SCHEMA_ID": f"{project_name}-v1",
         "CREATED_DATE": date.today().isoformat(),
     }
+
+
+def apply_substitutions(content: str, substitutions: dict[str, Any]) -> str:
+    """Apply substitutions to template content.
+
+    Args:
+        content: Template content with {{VARIABLE}} placeholders
+        substitutions: Dictionary of variable names to values
+
+    Returns:
+        Content with substitutions applied
+    """
+    result = content
+    for key, value in substitutions.items():
+        result = result.replace(f"{{{{{key}}}}}", str(value))
+    return result
