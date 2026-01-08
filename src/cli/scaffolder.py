@@ -1,6 +1,7 @@
 """Template scaffolding utilities."""
 
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 
@@ -49,3 +50,35 @@ def apply_substitutions(content: str, substitutions: dict[str, Any]) -> str:
     for key, value in substitutions.items():
         result = result.replace(f"{{{{{key}}}}}", str(value))
     return result
+
+
+def scaffold_template(
+    template_dir: Path,
+    project_name: str,
+    output_dir: Path,
+) -> list[Path]:
+    """Scaffold a template to the output directory.
+
+    Args:
+        template_dir: Path to the template directory
+        project_name: Name for the new project
+        output_dir: Where to create the scaffolded project
+
+    Returns:
+        List of created file paths
+    """
+    substitutions = build_substitutions(project_name)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    created_files = []
+
+    for template_file in template_dir.iterdir():
+        if template_file.is_file():
+            content = template_file.read_text()
+            customized = apply_substitutions(content, substitutions)
+
+            output_file = output_dir / template_file.name
+            output_file.write_text(customized)
+            created_files.append(output_file)
+
+    return created_files
