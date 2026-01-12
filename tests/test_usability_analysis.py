@@ -21,7 +21,7 @@ from baml_client.types import (
     IssueSeverity,
     UsabilityRecommendation,
     RecommendationPriority,
-    EffortLevel,
+    UsabilityEffortLevel,
     GUIComparisonResult,
     UserPersona,
     TechnicalSkillLevel,
@@ -211,23 +211,23 @@ class TestRecommendationPriority:
 
 
 # ============================================
-# Test Effort Level Enum
+# Test Usability Effort Level Enum
 # ============================================
 
-class TestEffortLevel:
-    """Test EffortLevel enum."""
+class TestUsabilityEffortLevel:
+    """Test UsabilityEffortLevel enum."""
 
     def test_effort_values_exist(self):
         """Test that all effort values exist."""
-        assert EffortLevel.TRIVIAL is not None
-        assert EffortLevel.LOW is not None
-        assert EffortLevel.MEDIUM is not None
-        assert EffortLevel.HIGH is not None
-        assert EffortLevel.VERY_HIGH is not None
+        assert UsabilityEffortLevel.TRIVIAL is not None
+        assert UsabilityEffortLevel.LOW is not None
+        assert UsabilityEffortLevel.MEDIUM is not None
+        assert UsabilityEffortLevel.HIGH is not None
+        assert UsabilityEffortLevel.MAJOR is not None
 
     def test_effort_count(self):
         """Test that we have 5 effort levels."""
-        efforts = list(EffortLevel)
+        efforts = list(UsabilityEffortLevel)
         assert len(efforts) == 5
 
 
@@ -406,14 +406,14 @@ class TestUsabilityRecommendation:
             title="Add confirmation for destructive actions",
             current_state="Delete action executes immediately",
             suggested_change="Add a confirmation prompt before deletion",
-            implementation_effort=EffortLevel.LOW,
+            implementation_effort=UsabilityEffortLevel.LOW,
             expected_improvement="Prevent accidental data loss",
             related_issues=["ISS-001"],
         )
 
         assert rec.recommendation_id == "REC-001"
         assert rec.priority == RecommendationPriority.HIGH
-        assert rec.implementation_effort == EffortLevel.LOW
+        assert rec.implementation_effort == UsabilityEffortLevel.LOW
         assert "ISS-001" in rec.related_issues
 
 
@@ -583,7 +583,7 @@ class TestUsabilityAnalysis:
                 title="Enhance feedback templates",
                 current_state="Basic success/error messages",
                 suggested_change="Add more detailed feedback options",
-                implementation_effort=EffortLevel.MEDIUM,
+                implementation_effort=UsabilityEffortLevel.MEDIUM,
                 expected_improvement="Better user understanding",
                 related_issues=["ISS-001"],
             ),
@@ -651,7 +651,7 @@ class TestTypeImports:
         assert IssueSeverity is not None
         assert UsabilityRecommendation is not None
         assert RecommendationPriority is not None
-        assert EffortLevel is not None
+        assert UsabilityEffortLevel is not None
         assert GUIComparisonResult is not None
         assert UserPersona is not None
         assert TechnicalSkillLevel is not None
