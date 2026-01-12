@@ -124,6 +124,24 @@ from src.context_primitives.decorators import (
     # Composition helpers
     compose,
     create_contextual_decorator,
+    # Global context system (contextvars)
+    ContextSystemNotInitializedError,
+    init_context_system,
+    init_context_system_async,
+    get_context_manager,
+    get_current_session_id,
+    set_current_session_id,
+    session_scope,
+    # @contextual decorator (global manager)
+    contextual,
+    # @persist_result decorator
+    persist_result,
+    # @contextual_variable decorator
+    contextual_variable,
+    # Convenience decorators
+    with_history,
+    with_variables_only,
+    stateless,
 )
 
 __all__ = [
@@ -207,4 +225,22 @@ __all__ = [
     # Decorators - Composition
     "compose",
     "create_contextual_decorator",
+    # Global context system (contextvars)
+    "ContextSystemNotInitializedError",
+    "init_context_system",
+    "init_context_system_async",
+    "get_context_manager",
+    "get_current_session_id",
+    "set_current_session_id",
+    "session_scope",
+    # @contextual decorator (global manager)
+    "contextual",
+    # @persist_result decorator
+    "persist_result",
+    # @contextual_variable decorator
+    "contextual_variable",
+    # Convenience decorators
+    "with_history",
+    "with_variables_only",
+    "stateless",
 ]
