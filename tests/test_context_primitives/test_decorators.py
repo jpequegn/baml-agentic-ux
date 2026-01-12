@@ -814,3 +814,403 @@ class TestDecoratorMetrics:
 
         clear_metrics()
         assert len(get_metrics()) == 0
+
+
+# ============================================
+# Global Context System Tests (NEW)
+# ============================================
+
+from src.context_primitives.decorators import (
+    ContextSystemNotInitializedError,
+    init_context_system,
+    init_context_system_async,
+    get_context_manager,
+    get_current_session_id,
+    set_current_session_id,
+    session_scope,
+    contextual,
+    persist_result,
+    contextual_variable,
+    with_history,
+    with_variables_only,
+    stateless,
+    _current_manager,
+    _current_session_id,
+)
+
+
+@pytest.fixture
+def reset_global_context():
+    """Reset global context before and after each test."""
+    _current_manager.set(None)
+    _current_session_id.set(None)
+    yield
+    _current_manager.set(None)
+    _current_session_id.set(None)
+
+
+class TestGlobalContextSystem:
+    """Tests for global context system with contextvars."""
+
+    @pytest.fixture(autouse=True)
+    def setup_reset(self, reset_global_context):
+        """Use reset fixture for all tests."""
+        pass
+
+    def test_uninitialized_raises_error(self):
+        """Test that using system before init raises error."""
+        with pytest.raises(ContextSystemNotInitializedError):
+            get_context_manager()
+
+    @pytest.mark.asyncio
+    async def test_init_context_system(self, memory_provider):
+        """Test initializing context system."""
+        manager = init_context_system(provider=memory_provider)
+        await manager.initialize()
+
+        assert get_context_manager() is manager
+
+    @pytest.mark.asyncio
+    async def test_init_context_system_async(self, memory_provider):
+        """Test async initialization."""
+        manager = await init_context_system_async(provider=memory_provider)
+
+        assert get_context_manager() is manager
+        assert manager._initialized is True
+
+    @pytest.mark.asyncio
+    async def test_init_with_existing_manager(self, manager):
+        """Test initializing with pre-existing manager."""
+        init_context_system(manager=manager)
+
+        assert get_context_manager() is manager
+
+    def test_get_current_session_id_default(self):
+        """Test default session ID is None."""
+        assert get_current_session_id() is None
+
+    def test_set_current_session_id(self):
+        """Test setting current session ID."""
+        set_current_session_id("test_session")
+        assert get_current_session_id() == "test_session"
+
+        set_current_session_id(None)
+        assert get_current_session_id() is None
+
+
+class TestSessionScope:
+    """Tests for session_scope context manager."""
+
+    @pytest.fixture(autouse=True)
+    def setup_reset(self, reset_global_context):
+        """Use reset fixture for all tests."""
+        pass
+
+    @pytest.mark.asyncio
+    async def test_basic_session_scope(self, manager):
+        """Test basic session scope."""
+        init_context_system(manager=manager)
+
+        async with session_scope("scope_session") as ctx:
+            assert ctx is not None
+            assert ctx.session.session_id == "scope_session"
+            assert get_current_session_id() == "scope_session"
+
+        # Session ID should be cleared after scope
+        assert get_current_session_id() is None
+
+    @pytest.mark.asyncio
+    async def test_nested_session_scope(self, manager):
+        """Test nested session scopes."""
+        init_context_system(manager=manager)
+
+        async with session_scope("outer") as ctx1:
+            assert get_current_session_id() == "outer"
+
+            async with session_scope("inner") as ctx2:
+                assert get_current_session_id() == "inner"
+
+            # Back to outer
+            assert get_current_session_id() == "outer"
+
+        assert get_current_session_id() is None
+
+    @pytest.mark.asyncio
+    async def test_session_scope_with_user_id(self, manager):
+        """Test session scope with user_id."""
+        init_context_system(manager=manager)
+
+        async with session_scope("user_scope", user_id="user_123") as ctx:
+            assert ctx.session.user_id == "user_123"
+
+    @pytest.mark.asyncio
+    async def test_session_scope_cleanup(self, manager):
+        """Test session scope cleanup_on_exit."""
+        init_context_system(manager=manager)
+
+        async with session_scope("cleanup_session", cleanup_on_exit=True) as ctx:
+            assert ctx is not None
+
+        # Session should be deleted
+        deleted_ctx = await manager.get_session_context("cleanup_session")
+        assert deleted_ctx is None
+
+
+class TestContextualDecorator:
+    """Tests for @contextual decorator with global manager."""
+
+    @pytest.fixture(autouse=True)
+    def setup_reset(self, reset_global_context):
+        """Use reset fixture for all tests."""
+        pass
+
+    @pytest.mark.asyncio
+    async def test_contextual_with_explicit_session(self, manager):
+        """Test @contextual with explicit session_id parameter."""
+        init_context_system(manager=manager)
+
+        @contextual()
+        async def handler(user_input: str, context=None):
+            return context is not None
+
+        result = await handler("hello", session_id="explicit_session")
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_contextual_with_session_scope(self, manager):
+        """Test @contextual using session_scope."""
+        init_context_system(manager=manager)
+
+        @contextual()
+        async def handler(user_input: str, context=None):
+            return context["session_id"]
+
+        async with session_scope("scoped_session"):
+            result = await handler("hello")
+            assert result == "scoped_session"
+
+    @pytest.mark.asyncio
+    async def test_contextual_missing_session_raises(self, manager):
+        """Test @contextual raises without session."""
+        init_context_system(manager=manager)
+
+        @contextual()
+        async def handler(user_input: str, context=None):
+            return "result"
+
+        with pytest.raises(ValueError, match="No session_id provided"):
+            await handler("hello")
+
+    @pytest.mark.asyncio
+    async def test_contextual_inject_history_false(self, manager):
+        """Test @contextual with inject_history=False."""
+        init_context_system(manager=manager)
+
+        @contextual(inject_history=False)
+        async def handler(user_input: str, context=None):
+            return "recent_turns" not in context
+
+        result = await handler("test", session_id="no_history")
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_contextual_record_interaction(self, manager):
+        """Test @contextual with record_interaction=True."""
+        init_context_system(manager=manager)
+
+        @contextual(record_interaction=True)
+        async def handler(user_input: str, context=None):
+            return "Hello there!"
+
+        await handler(user_input="Hi", session_id="record_session")
+
+        ctx = await manager.get_session_context("record_session")
+        assert len(ctx.history.turns) == 1
+        assert ctx.history.turns[0].user_input == "Hi"
+
+
+class TestPersistResultDecorator:
+    """Tests for @persist_result decorator."""
+
+    @pytest.fixture(autouse=True)
+    def setup_reset(self, reset_global_context):
+        """Use reset fixture for all tests."""
+        pass
+
+    @pytest.mark.asyncio
+    async def test_persist_basic_result(self, manager):
+        """Test basic result persistence."""
+        init_context_system(manager=manager)
+        await manager.get_or_create_session("persist_test")
+
+        @persist_result("last_result")
+        async def handler(session_id: str):
+            return "persisted_value"
+
+        await handler(session_id="persist_test")
+
+        value = await manager.get_variable("persist_test", "last_result")
+        assert value == "persisted_value"
+
+    @pytest.mark.asyncio
+    async def test_persist_with_extractor(self, manager):
+        """Test persistence with value extractor."""
+        init_context_system(manager=manager)
+        await manager.get_or_create_session("extract_test")
+
+        class Result:
+            def __init__(self):
+                self.task_id = "task_123"
+
+        @persist_result("task_id", extractor=lambda r: r.task_id)
+        async def create_task(session_id: str, name: str):
+            return Result()
+
+        await create_task(session_id="extract_test", name="Test Task")
+
+        value = await manager.get_variable("extract_test", "task_id")
+        assert value == "task_123"
+
+    @pytest.mark.asyncio
+    async def test_persist_with_session_scope(self, manager):
+        """Test persistence using session_scope."""
+        init_context_system(manager=manager)
+
+        @persist_result("scoped_result")
+        async def handler(session_id: str):
+            return "scoped_value"
+
+        async with session_scope("scope_persist") as ctx:
+            await handler(session_id="scope_persist")
+
+        value = await manager.get_variable("scope_persist", "scoped_result")
+        assert value == "scoped_value"
+
+    @pytest.mark.asyncio
+    async def test_persist_on_error_false(self, manager):
+        """Test that result is not persisted on error by default."""
+        init_context_system(manager=manager)
+        await manager.get_or_create_session("error_test")
+
+        @persist_result("error_result")
+        async def handler(session_id: str):
+            raise ValueError("Test error")
+
+        with pytest.raises(ValueError):
+            await handler(session_id="error_test")
+
+        value = await manager.get_variable("error_test", "error_result")
+        assert value is None
+
+
+class TestContextualVariableDecorator:
+    """Tests for @contextual_variable decorator."""
+
+    @pytest.fixture(autouse=True)
+    def setup_reset(self, reset_global_context):
+        """Use reset fixture for all tests."""
+        pass
+
+    @pytest.mark.asyncio
+    async def test_inject_variable(self, manager):
+        """Test injecting a context variable."""
+        init_context_system(manager=manager)
+        await manager.get_or_create_session("var_test")
+        await manager.set_variable("var_test", "user_name", "Alice")
+
+        @contextual_variable("user_name")
+        async def greet(session_id: str, user_name: str = None):
+            return f"Hello, {user_name}!"
+
+        result = await greet(session_id="var_test")
+        assert result == "Hello, Alice!"
+
+    @pytest.mark.asyncio
+    async def test_inject_with_default(self, manager):
+        """Test variable injection with default value."""
+        init_context_system(manager=manager)
+        await manager.get_or_create_session("default_test")
+
+        @contextual_variable("missing_var", default="DefaultValue")
+        async def handler(session_id: str, missing_var: str = None):
+            return missing_var
+
+        result = await handler(session_id="default_test")
+        assert result == "DefaultValue"
+
+    @pytest.mark.asyncio
+    async def test_inject_with_custom_param_name(self, manager):
+        """Test variable injection with custom param name."""
+        init_context_system(manager=manager)
+        await manager.get_or_create_session("param_test")
+        await manager.set_variable("param_test", "preferences", {"theme": "dark"})
+
+        @contextual_variable("preferences", param_name="prefs")
+        async def apply_settings(session_id: str, prefs: dict = None):
+            return prefs
+
+        result = await apply_settings(session_id="param_test")
+        assert result == {"theme": "dark"}
+
+
+class TestConvenienceDecorators:
+    """Tests for convenience decorators."""
+
+    @pytest.fixture(autouse=True)
+    def setup_reset(self, reset_global_context):
+        """Use reset fixture for all tests."""
+        pass
+
+    @pytest.mark.asyncio
+    async def test_with_history(self, manager):
+        """Test @with_history decorator."""
+        init_context_system(manager=manager)
+        await manager.get_or_create_session("history_dec_test")
+        await manager.record_interaction(
+            "history_dec_test", user_input="Hi", response="Hello"
+        )
+
+        @with_history(max_turns=5)
+        async def handler(session_id: str, history=None):
+            return len(history)
+
+        result = await handler(session_id="history_dec_test")
+        assert result == 1
+
+    @pytest.mark.asyncio
+    async def test_with_variables_only(self, manager):
+        """Test @with_variables_only decorator."""
+        init_context_system(manager=manager)
+        await manager.get_or_create_session("vars_dec_test")
+        await manager.set_variable("vars_dec_test", "key1", "value1")
+        await manager.set_variable("vars_dec_test", "key2", "value2")
+
+        @with_variables_only(keys=["key1"])
+        async def handler(session_id: str, variables=None):
+            return variables
+
+        result = await handler(session_id="vars_dec_test")
+        assert "key1" in result
+        assert "key2" not in result
+
+    @pytest.mark.asyncio
+    async def test_stateless_decorator(self):
+        """Test @stateless marker decorator."""
+
+        @stateless
+        async def pure_function(data: dict):
+            return data["value"] * 2
+
+        result = await pure_function({"value": 21})
+        assert result == 42
+
+    @pytest.mark.asyncio
+    async def test_stateless_with_parens(self):
+        """Test @stateless() with parentheses."""
+
+        @stateless()
+        async def pure_function(data: dict):
+            return data["value"] + 1
+
+        result = await pure_function({"value": 41})
+        assert result == 42

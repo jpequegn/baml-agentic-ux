@@ -818,3 +818,669 @@ def create_contextual_decorator(
         return identity
 
     return compose(*decorators)
+
+
+# ============================================
+# Global Context System (contextvars)
+# ============================================
+
+from contextvars import ContextVar
+
+# Context variables for global session tracking
+_current_manager: ContextVar[Optional[Any]] = ContextVar("current_manager", default=None)
+_current_session_id: ContextVar[Optional[str]] = ContextVar("current_session_id", default=None)
+
+
+class ContextSystemNotInitializedError(RuntimeError):
+    """Raised when context system is used before initialization."""
+    pass
+
+
+def init_context_system(
+    provider: Any = None,
+    config: Any = None,
+    manager: Optional[Any] = None,
+) -> Any:
+    """
+    Initialize the global context system.
+
+    Must be called once at application startup. Sets up the global
+    ContextManager that will be used by @contextual and with_session.
+
+    Args:
+        provider: Optional pre-configured ContextProvider
+        config: Optional ContextConfig for default provider
+        manager: Optional pre-initialized ContextManager
+
+    Returns:
+        The initialized ContextManager
+
+    Example:
+        # Option 1: With default in-memory provider
+        init_context_system()
+
+        # Option 2: With custom provider
+        init_context_system(provider=RedisContextProvider(config))
+
+        # Option 3: With pre-initialized manager
+        manager = await create_context_manager()
+        init_context_system(manager=manager)
+    """
+    if manager is not None:
+        _current_manager.set(manager)
+        return manager
+
+    # Import here to avoid circular imports
+    from src.context_primitives.integration import ContextManager
+    from src.context_primitives.provider import ContextConfig
+
+    mgr = ContextManager(
+        provider=provider,
+        config=config or ContextConfig(),
+    )
+    _current_manager.set(mgr)
+    return mgr
+
+
+async def init_context_system_async(
+    provider: Any = None,
+    config: Any = None,
+) -> Any:
+    """
+    Initialize and await the global context system.
+
+    Async version that also calls manager.initialize().
+
+    Args:
+        provider: Optional pre-configured ContextProvider
+        config: Optional ContextConfig for default provider
+
+    Returns:
+        The initialized and ready ContextManager
+
+    Example:
+        await init_context_system_async()
+        # System is ready to use
+    """
+    manager = init_context_system(provider=provider, config=config)
+    await manager.initialize()
+    return manager
+
+
+def get_context_manager() -> Any:
+    """
+    Get the current global ContextManager.
+
+    Returns:
+        The global ContextManager
+
+    Raises:
+        ContextSystemNotInitializedError: If init_context_system not called
+    """
+    manager = _current_manager.get()
+    if manager is None:
+        raise ContextSystemNotInitializedError(
+            "Context system not initialized. Call init_context_system() first."
+        )
+    return manager
+
+
+def get_current_session_id() -> Optional[str]:
+    """
+    Get the current session ID from context.
+
+    Returns:
+        Current session ID or None if not in a session scope
+    """
+    return _current_session_id.get()
+
+
+def set_current_session_id(session_id: Optional[str]) -> None:
+    """
+    Set the current session ID in context.
+
+    Args:
+        session_id: Session ID to set (or None to clear)
+    """
+    _current_session_id.set(session_id)
+
+
+@asynccontextmanager
+async def session_scope(
+    session_id: str,
+    *,
+    user_id: Optional[str] = None,
+    manager: Optional[Any] = None,
+    cleanup_on_exit: bool = False,
+):
+    """
+    Async context manager for session-scoped operations using contextvars.
+
+    Sets the current session ID in context so that @contextual decorated
+    functions can automatically use it without explicit session_id parameter.
+
+    Args:
+        session_id: Session identifier
+        user_id: Optional user identifier
+        manager: Optional ContextManager (uses global if not provided)
+        cleanup_on_exit: Whether to delete session on exit
+
+    Yields:
+        ExecutionContext for the session
+
+    Example:
+        async with session_scope("user_123") as ctx:
+            # All @contextual decorated functions will use this session
+            result = await extract_intent("Hello!")
+            print(f"Session has {ctx.history.total_turns} turns")
+    """
+    mgr = manager or get_context_manager()
+
+    # Save previous session (for nested scopes)
+    previous_session = _current_session_id.get()
+
+    # Set current session
+    _current_session_id.set(session_id)
+
+    try:
+        ctx = await mgr.get_or_create_session(session_id, user_id=user_id)
+        yield ctx
+    finally:
+        # Restore previous session
+        _current_session_id.set(previous_session)
+
+        if cleanup_on_exit:
+            await mgr.clear_session(session_id)
+
+
+# Alias for compatibility with issue specification
+async def with_session_scope(session_id: str, **kwargs):
+    """Alias for session_scope for API compatibility."""
+    async with session_scope(session_id, **kwargs) as ctx:
+        yield ctx
+
+
+# ============================================
+# @contextual Decorator (uses global manager)
+# ============================================
+
+
+def contextual(
+    *,
+    inject_history: bool = True,
+    inject_variables: bool = True,
+    record_interaction: bool = False,
+    session_param: str = "session_id",
+    context_param: str = "context",
+    context_format: ContextFormat = ContextFormat.CONVERSATION,
+    manager: Optional[Any] = None,
+) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
+    """
+    Main decorator for context injection using global manager.
+
+    Automatically injects conversation context into decorated functions.
+    Uses the global ContextManager set by init_context_system().
+
+    The session_id can be provided in three ways:
+    1. As an explicit parameter: func(session_id="user_123", ...)
+    2. From current session scope: async with session_scope("user_123"): func(...)
+    3. Using both (explicit parameter takes precedence)
+
+    Args:
+        inject_history: Include conversation history in context
+        inject_variables: Include context variables
+        record_interaction: Auto-record this call as a turn
+        session_param: Name of session_id parameter (or None to require scope)
+        context_param: Name of parameter to inject context into
+        context_format: Format of injected context
+        manager: Optional explicit manager (uses global if not provided)
+
+    Returns:
+        Decorated async function with context injection
+
+    Example:
+        @contextual()
+        async def extract_intent(user_input: str, context: dict = None):
+            # context is automatically populated
+            return await b.ExtractIntent(
+                user_input=user_input,
+                conversation_history=context.get("recent_turns", [])
+            )
+
+        # Usage option 1: explicit session_id
+        result = await extract_intent("Hello", session_id="user_123")
+
+        # Usage option 2: session scope
+        async with session_scope("user_123"):
+            result = await extract_intent("Hello")
+    """
+
+    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+        @wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            # Get manager
+            mgr = manager or get_context_manager()
+
+            # Determine session_id
+            session_id = kwargs.pop(session_param, None) if session_param else None
+
+            if session_id is None:
+                # Try from positional args
+                if session_param:
+                    sig = inspect.signature(func)
+                    params = list(sig.parameters.keys())
+                    if session_param in params:
+                        idx = params.index(session_param)
+                        if idx < len(args):
+                            session_id = args[idx]
+                            # Convert args to list to remove it
+                            args = tuple(a for i, a in enumerate(args) if i != idx)
+
+            if session_id is None:
+                # Try from context variable (session_scope)
+                session_id = get_current_session_id()
+
+            if session_id is None:
+                raise ValueError(
+                    f"No session_id provided. Either pass '{session_param}' parameter "
+                    "or use 'async with session_scope(session_id)'"
+                )
+
+            # Get or create session
+            ctx = await mgr.get_or_create_session(str(session_id))
+
+            # Build context based on format
+            if context_format == ContextFormat.FULL:
+                context_value = ctx
+            elif context_format == ContextFormat.CONVERSATION:
+                context_value = ctx.to_conversation_context()
+                if not inject_history:
+                    context_value.pop("recent_turns", None)
+                    context_value.pop("turn_count", None)
+                if not inject_variables:
+                    context_value.pop("variables", None)
+            elif context_format == ContextFormat.MINIMAL:
+                context_value = {
+                    "session_id": ctx.session.session_id,
+                }
+                if inject_history:
+                    context_value["recent_turns"] = [
+                        {"user_input": t.user_input, "assistant_response": t.assistant_response}
+                        for t in ctx.history.get_recent(5)
+                    ]
+            elif context_format == ContextFormat.VARIABLES_ONLY:
+                context_value = ctx.variables.to_flat_dict()
+            else:
+                context_value = ctx.to_conversation_context()
+
+            # Inject context
+            kwargs[context_param] = context_value
+
+            # Execute function
+            start_time = time.monotonic()
+            result = await func(*args, **kwargs)
+            duration_ms = int((time.monotonic() - start_time) * 1000)
+
+            # Record interaction if configured
+            if record_interaction:
+                user_input = kwargs.get("user_input", "")
+                response = _extract_response_default(result)
+                if user_input and response:
+                    await mgr.record_interaction(
+                        session_id=str(session_id),
+                        user_input=str(user_input),
+                        response=response,
+                        duration_ms=duration_ms,
+                    )
+
+            return result
+
+        return wrapper
+
+    return decorator
+
+
+def _extract_response_default(result: Any) -> str:
+    """Default response extractor for recording."""
+    if isinstance(result, str):
+        return result
+    if hasattr(result, "response"):
+        return str(result.response)
+    if hasattr(result, "message"):
+        return str(result.message)
+    if isinstance(result, dict) and "response" in result:
+        return str(result["response"])
+    return str(result)
+
+
+# ============================================
+# @persist_result Decorator
+# ============================================
+
+
+def persist_result(
+    variable_name: str,
+    *,
+    extractor: Optional[Callable[[Any], Any]] = None,
+    session_param: str = "session_id",
+    manager: Optional[Any] = None,
+    persist_on_error: bool = False,
+) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
+    """
+    Decorator for persisting function results to context variables.
+
+    Saves the result (or extracted value) as a context variable after
+    successful execution.
+
+    Args:
+        variable_name: Name of the context variable to store result
+        extractor: Optional function to extract value from result
+        session_param: Name of session_id parameter
+        manager: Optional explicit manager (uses global if not provided)
+        persist_on_error: Whether to persist even if function raises
+
+    Returns:
+        Decorated function that persists results
+
+    Example:
+        @persist_result("last_intent", extractor=lambda r: r.intent)
+        async def extract_intent(session_id: str, user_input: str):
+            return await b.ExtractIntent(user_input=user_input)
+
+        # After calling:
+        # manager.get_variable(session_id, "last_intent") -> "greeting"
+
+        @persist_result("task_id", extractor=lambda r: r.task_id)
+        async def create_task(session_id: str, name: str):
+            return await b.CreateTask(name=name)
+    """
+
+    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+        @wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            mgr = manager or get_context_manager()
+
+            # Get session_id
+            session_id = kwargs.get(session_param)
+            if session_id is None:
+                sig = inspect.signature(func)
+                params = list(sig.parameters.keys())
+                if session_param in params:
+                    idx = params.index(session_param)
+                    if idx < len(args):
+                        session_id = args[idx]
+
+            if session_id is None:
+                session_id = get_current_session_id()
+
+            if session_id is None:
+                raise ValueError(f"Missing required parameter: {session_param}")
+
+            result = None
+            error = None
+
+            try:
+                result = await func(*args, **kwargs)
+            except Exception as e:
+                error = e
+                if not persist_on_error:
+                    raise
+
+            # Extract and persist value
+            if result is not None or persist_on_error:
+                try:
+                    value = extractor(result) if extractor else result
+                    await mgr.set_variable(str(session_id), variable_name, value)
+                except Exception:
+                    # Don't fail the function if persistence fails
+                    pass
+
+            if error:
+                raise error
+
+            return result  # type: ignore
+
+        return wrapper
+
+    return decorator
+
+
+# ============================================
+# Convenience Decorators
+# ============================================
+
+
+def with_history(
+    manager: Optional[Any] = None,
+    *,
+    session_param: str = "session_id",
+    history_param: str = "history",
+    max_turns: int = 10,
+) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
+    """
+    Convenience decorator for injecting only conversation history.
+
+    Lighter weight than @contextual when you only need history.
+
+    Args:
+        manager: Optional explicit manager
+        session_param: Name of session_id parameter
+        history_param: Name of parameter to inject history into
+        max_turns: Maximum number of recent turns to include
+
+    Returns:
+        Decorated function with history injection
+
+    Example:
+        @with_history(max_turns=5)
+        async def generate_response(session_id: str, user_input: str, history=None):
+            return await b.GenerateResponse(
+                user_input=user_input,
+                conversation_history=history
+            )
+    """
+
+    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+        @wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            mgr = manager or get_context_manager()
+
+            # Get session_id
+            session_id = kwargs.get(session_param)
+            if session_id is None:
+                sig = inspect.signature(func)
+                params = list(sig.parameters.keys())
+                if session_param in params:
+                    idx = params.index(session_param)
+                    if idx < len(args):
+                        session_id = args[idx]
+
+            if session_id is None:
+                session_id = get_current_session_id()
+
+            if session_id is None:
+                raise ValueError(f"Missing required parameter: {session_param}")
+
+            # Get history
+            ctx = await mgr.get_or_create_session(str(session_id))
+            recent = ctx.history.get_recent(max_turns)
+            history = [
+                {
+                    "user_input": t.user_input,
+                    "assistant_response": t.assistant_response,
+                    "timestamp": t.timestamp.isoformat() if t.timestamp else None,
+                }
+                for t in recent
+            ]
+
+            kwargs[history_param] = history
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def with_variables_only(
+    manager: Optional[Any] = None,
+    *,
+    session_param: str = "session_id",
+    variables_param: str = "variables",
+    keys: Optional[list[str]] = None,
+) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
+    """
+    Convenience decorator for injecting only context variables.
+
+    Lighter weight than @contextual when you only need variables.
+
+    Args:
+        manager: Optional explicit manager
+        session_param: Name of session_id parameter
+        variables_param: Name of parameter to inject variables into
+        keys: Optional list of specific keys to include
+
+    Returns:
+        Decorated function with variables injection
+
+    Example:
+        @with_variables_only(keys=["user_name", "preferences"])
+        async def personalize(session_id: str, message: str, variables=None):
+            name = variables.get("user_name", "User")
+            return f"Hello {name}! {message}"
+    """
+
+    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+        @wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            mgr = manager or get_context_manager()
+
+            # Get session_id
+            session_id = kwargs.get(session_param)
+            if session_id is None:
+                sig = inspect.signature(func)
+                params = list(sig.parameters.keys())
+                if session_param in params:
+                    idx = params.index(session_param)
+                    if idx < len(args):
+                        session_id = args[idx]
+
+            if session_id is None:
+                session_id = get_current_session_id()
+
+            if session_id is None:
+                raise ValueError(f"Missing required parameter: {session_param}")
+
+            # Get variables
+            all_vars = await mgr.provider.get_variables(str(session_id))
+            flat_vars = all_vars.to_flat_dict()
+
+            if keys:
+                variables = {k: flat_vars.get(k) for k in keys}
+            else:
+                variables = flat_vars
+
+            kwargs[variables_param] = variables
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def stateless(
+    func: Optional[Callable[P, Awaitable[T]]] = None,
+) -> Union[Callable[P, Awaitable[T]], Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]]:
+    """
+    Marker decorator indicating a function is stateless.
+
+    This is a no-op decorator that serves as documentation that
+    a function intentionally does not use context.
+
+    Args:
+        func: The function to mark as stateless
+
+    Returns:
+        The original function unchanged
+
+    Example:
+        @stateless
+        async def utility_function(data: dict):
+            # This function intentionally doesn't use context
+            return process(data)
+    """
+    if func is None:
+        return stateless  # type: ignore
+
+    # Just return the function unchanged
+    return func
+
+
+# ============================================
+# @contextual_variable Decorator
+# ============================================
+
+
+def contextual_variable(
+    variable_name: str,
+    *,
+    param_name: Optional[str] = None,
+    default: Any = None,
+    session_param: str = "session_id",
+    manager: Optional[Any] = None,
+) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
+    """
+    Decorator for injecting a specific context variable.
+
+    Injects a single context variable into a function parameter.
+
+    Args:
+        variable_name: Name of the context variable to inject
+        param_name: Name of parameter to inject into (defaults to variable_name)
+        default: Default value if variable not found
+        session_param: Name of session_id parameter
+        manager: Optional explicit manager
+
+    Returns:
+        Decorated function with variable injection
+
+    Example:
+        @contextual_variable("user_name", default="Guest")
+        async def greet(session_id: str, user_name: str = None):
+            return f"Hello, {user_name}!"
+
+        @contextual_variable("preferences", param_name="prefs")
+        async def apply_settings(session_id: str, prefs: dict = None):
+            return configure(prefs or {})
+    """
+    target_param = param_name or variable_name
+
+    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+        @wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            mgr = manager or get_context_manager()
+
+            # Get session_id
+            session_id = kwargs.get(session_param)
+            if session_id is None:
+                sig = inspect.signature(func)
+                params = list(sig.parameters.keys())
+                if session_param in params:
+                    idx = params.index(session_param)
+                    if idx < len(args):
+                        session_id = args[idx]
+
+            if session_id is None:
+                session_id = get_current_session_id()
+
+            if session_id is None:
+                raise ValueError(f"Missing required parameter: {session_param}")
+
+            # Get the specific variable
+            value = await mgr.get_variable(str(session_id), variable_name, default)
+            kwargs[target_param] = value
+
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
