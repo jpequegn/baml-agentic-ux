@@ -1,0 +1,150 @@
+{
+  "schema_id": "{{SCHEMA_ID}}",
+  "name": "{{PROJECT_NAME_TITLE}} LUI",
+  "description": "A Language User Interface for {{PROJECT_NAME_TITLE}}",
+  "version": "1.0.0",
+  "domain": {
+    "domain_name": "{{PROJECT_NAME}}",
+    "subdomain": "crud-operations",
+    "description": "Basic CRUD operations demonstrating LUI patterns",
+    "key_concepts": ["items", "create", "read", "update", "delete"]
+  },
+  "components": [
+    {
+      "component_id": "create-item",
+      "component_type": "ACTION",
+      "intent": "Create a new item",
+      "description": "Demonstrates ACTION component type with required parameters",
+      "invocation": {
+        "primary_phrase": "create item",
+        "alternate_phrases": ["add item", "new item", "make item"],
+        "examples": [
+          "Create an item called test",
+          "Add a new item",
+          "Make item with name report"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "title",
+          "type": "string",
+          "required": true,
+          "description": "Title of the item"
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "required": false,
+          "description": "Optional description"
+        }
+      ],
+      "feedback": {
+        "success_template": "Created item '{title}' successfully",
+        "error_template": "Could not create item: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "list-items",
+      "component_type": "QUERY",
+      "intent": "List all items",
+      "description": "Demonstrates QUERY component type for retrieving data",
+      "invocation": {
+        "primary_phrase": "list items",
+        "alternate_phrases": ["show items", "my items", "get items"],
+        "examples": [
+          "Show me my items",
+          "List all items",
+          "What items do I have?"
+        ]
+      },
+      "feedback": {
+        "success_template": "Here are your items",
+        "error_template": "Could not retrieve items: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "update-item",
+      "component_type": "ACTION",
+      "intent": "Update an existing item",
+      "description": "Demonstrates updating with entity reference",
+      "invocation": {
+        "primary_phrase": "update item",
+        "alternate_phrases": ["edit item", "change item", "modify item"],
+        "examples": [
+          "Update item 123",
+          "Edit the latest item",
+          "Change item title to 'New Title'"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "item_id",
+          "type": "string",
+          "required": true,
+          "description": "ID or reference to the item"
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "required": false,
+          "description": "New title"
+        }
+      ],
+      "feedback": {
+        "success_template": "Updated item successfully",
+        "error_template": "Could not update item: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "delete-item",
+      "component_type": "ACTION",
+      "intent": "Delete an item",
+      "description": "Demonstrates confirmation for destructive actions",
+      "invocation": {
+        "primary_phrase": "delete item",
+        "alternate_phrases": ["remove item", "trash item"],
+        "examples": [
+          "Delete item 123",
+          "Remove the old item"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "item_id",
+          "type": "string",
+          "required": true,
+          "description": "ID or reference to the item"
+        }
+      ],
+      "feedback": {
+        "success_template": "Item deleted",
+        "error_template": "Could not delete item: {error}",
+        "confirmation_required": true,
+        "confirmation_prompt": "Are you sure you want to delete this item? This cannot be undone."
+      }
+    },
+    {
+      "component_id": "help",
+      "component_type": "FEEDBACK",
+      "intent": "Get help with using the interface",
+      "description": "Demonstrates FEEDBACK component type for discoverability",
+      "invocation": {
+        "primary_phrase": "help",
+        "alternate_phrases": ["what can you do", "commands", "?"],
+        "examples": [
+          "Help",
+          "What can you do?",
+          "Show me commands"
+        ]
+      },
+      "feedback": {
+        "success_template": "I can help you manage items. You can create, list, update, or delete items. Try 'create item' or 'list items' to get started!",
+        "error_template": "Sorry, I couldn't load help",
+        "confirmation_required": false
+      }
+    }
+  ]
+}

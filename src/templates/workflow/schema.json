@@ -1,0 +1,188 @@
+{
+  "schema_id": "{{SCHEMA_ID}}",
+  "name": "{{PROJECT_NAME_TITLE}} LUI",
+  "description": "A Language User Interface for {{PROJECT_NAME_TITLE}}",
+  "version": "1.0.0",
+  "domain": {
+    "domain_name": "{{PROJECT_NAME}}",
+    "subdomain": "workflow-patterns",
+    "description": "Multi-step conversational workflow patterns",
+    "key_concepts": ["process", "steps", "state", "transitions", "branching"]
+  },
+  "components": [
+    {
+      "component_id": "start-process",
+      "component_type": "ACTION",
+      "intent": "Initiate a multi-step workflow",
+      "description": "Demonstrates starting a stateful workflow process (e.g., checkout, onboarding)",
+      "invocation": {
+        "primary_phrase": "start process",
+        "alternate_phrases": ["begin workflow", "initiate process", "start workflow"],
+        "examples": [
+          "Start the checkout process",
+          "Begin onboarding",
+          "Initiate the approval workflow"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "process_type",
+          "type": "string",
+          "required": false,
+          "description": "Type of workflow to start (checkout, onboarding, etc.)"
+        }
+      ],
+      "feedback": {
+        "success_template": "Started {process_type} workflow. Let's begin!",
+        "error_template": "Could not start workflow: {error}",
+        "confirmation_required": false
+      },
+      "metadata": {
+        "next_steps": ["collect-info"],
+        "state_changes": {
+          "workflow_status": "in_progress",
+          "current_step": 1
+        }
+      }
+    },
+    {
+      "component_id": "collect-info",
+      "component_type": "ACTION",
+      "intent": "Gather required information step-by-step",
+      "description": "Demonstrates collecting user information in a conversational flow",
+      "invocation": {
+        "primary_phrase": "provide information",
+        "alternate_phrases": ["enter details", "add information", "fill in"],
+        "examples": [
+          "I'd like to provide my shipping address",
+          "Here's my contact information",
+          "My email is user@example.com"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "field_name",
+          "type": "string",
+          "required": true,
+          "description": "The field being provided (email, address, phone, etc.)"
+        },
+        {
+          "name": "field_value",
+          "type": "string",
+          "required": true,
+          "description": "The value for the field"
+        }
+      ],
+      "feedback": {
+        "success_template": "Got it! Saved your {field_name}.",
+        "error_template": "Could not save {field_name}: {error}",
+        "confirmation_required": false
+      },
+      "metadata": {
+        "validation_required": true,
+        "can_retry": true,
+        "next_steps": ["collect-info", "confirm-action"]
+      }
+    },
+    {
+      "component_id": "confirm-action",
+      "component_type": "ACTION",
+      "intent": "Confirm details before proceeding",
+      "description": "Demonstrates confirmation step before committing to an action",
+      "invocation": {
+        "primary_phrase": "confirm",
+        "alternate_phrases": ["yes proceed", "looks good", "submit"],
+        "examples": [
+          "Yes, confirm my order",
+          "Looks good, proceed",
+          "Submit the application"
+        ]
+      },
+      "feedback": {
+        "success_template": "Confirmed! Processing your request...",
+        "error_template": "Could not confirm: {error}",
+        "confirmation_required": true,
+        "confirmation_prompt": "Please review the details before confirming. Continue?"
+      },
+      "metadata": {
+        "requires_complete_state": true,
+        "next_steps": ["complete-process"],
+        "state_changes": {
+          "workflow_status": "confirmed"
+        }
+      }
+    },
+    {
+      "component_id": "branch-decision",
+      "component_type": "ACTION",
+      "intent": "Handle conditional workflow paths",
+      "description": "Demonstrates branching logic based on user choice or conditions",
+      "invocation": {
+        "primary_phrase": "choose option",
+        "alternate_phrases": ["select path", "I want to", "go with"],
+        "examples": [
+          "I want to use express shipping",
+          "Choose the premium plan",
+          "Go with option B"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "choice",
+          "type": "string",
+          "required": true,
+          "description": "The user's choice that determines the workflow path"
+        },
+        {
+          "name": "branch_point",
+          "type": "string",
+          "required": false,
+          "description": "The decision point in the workflow"
+        }
+      ],
+      "feedback": {
+        "success_template": "Selected {choice}. Continuing with that option...",
+        "error_template": "Could not process choice: {error}",
+        "confirmation_required": false
+      },
+      "metadata": {
+        "conditional_paths": {
+          "express": ["collect-payment-info", "confirm-action"],
+          "standard": ["confirm-action"],
+          "premium": ["collect-payment-info", "setup-account", "confirm-action"]
+        },
+        "state_changes": {
+          "selected_path": "{choice}"
+        }
+      }
+    },
+    {
+      "component_id": "complete-process",
+      "component_type": "FEEDBACK",
+      "intent": "Mark workflow completion and provide summary",
+      "description": "Demonstrates workflow completion with state cleanup and summary",
+      "invocation": {
+        "primary_phrase": "complete",
+        "alternate_phrases": ["finish", "done", "finalize"],
+        "examples": [
+          "Complete the process",
+          "We're done",
+          "Finalize everything"
+        ]
+      },
+      "feedback": {
+        "success_template": "Workflow completed successfully! Summary: {summary}",
+        "error_template": "Could not complete workflow: {error}",
+        "confirmation_required": false
+      },
+      "metadata": {
+        "final_step": true,
+        "state_changes": {
+          "workflow_status": "completed",
+          "current_step": null
+        },
+        "cleanup_required": true
+      }
+    }
+  ]
+}

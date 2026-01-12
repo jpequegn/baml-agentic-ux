@@ -8,6 +8,7 @@ dependencies = [
     "baml-py>=0.215.2",
     "pydantic>=2.12.5",
     "pyyaml>=6.0.3",
+    "questionary>=2.0.0",
     "rich>=14.2.0",
     "typer>=0.21.0",
 ]
@@ -21,6 +22,7 @@ dev = [
 ]
 
 [project.scripts]
+baml-agentic-ux = "src.cli:main"
 lui-sim = "lui_simulator.cli:main"
 convtest = "src.testing.cli:main"
 

@@ -223,7 +223,7 @@ class TestEffortLevel:
         assert EffortLevel.LOW is not None
         assert EffortLevel.MEDIUM is not None
         assert EffortLevel.HIGH is not None
-        assert EffortLevel.MAJOR is not None
+        assert EffortLevel.VERY_HIGH is not None
 
     def test_effort_count(self):
         """Test that we have 5 effort levels."""

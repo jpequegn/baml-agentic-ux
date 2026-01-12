@@ -8,7 +8,7 @@ from baml_client.types import (
     ErrorSeverity,
     RecoveryTier,
     OverallHealth,
-    TransformationType,
+    ModalityTransformationType,
     NotificationStyle,
     RecoveryActionType,
     Modality,
@@ -105,23 +105,23 @@ class TestOverallHealthEnum:
         assert len(OverallHealth) == 4
 
 
-class TestTransformationTypeEnum:
-    """Tests for TransformationType enum."""
+class TestModalityTransformationTypeEnum:
+    """Tests for ModalityTransformationType enum."""
 
     def test_all_values_exist(self) -> None:
         """Test all transformation type values are defined."""
-        assert TransformationType.VOICE_TO_TEXT.value == "VOICE_TO_TEXT"
-        assert TransformationType.VISUAL_TO_TEXT.value == "VISUAL_TO_TEXT"
-        assert TransformationType.TABLE_TO_LIST.value == "TABLE_TO_LIST"
-        assert TransformationType.CHART_TO_DESCRIPTION.value == "CHART_TO_DESCRIPTION"
-        assert TransformationType.IMAGE_TO_ALT_TEXT.value == "IMAGE_TO_ALT_TEXT"
-        assert TransformationType.COMPLEX_TO_SIMPLE.value == "COMPLEX_TO_SIMPLE"
-        assert TransformationType.MEDIA_TO_TRANSCRIPT.value == "MEDIA_TO_TRANSCRIPT"
-        assert TransformationType.INTERACTIVE_TO_STATIC.value == "INTERACTIVE_TO_STATIC"
+        assert ModalityTransformationType.VOICE_TO_TEXT.value == "VOICE_TO_TEXT"
+        assert ModalityTransformationType.VISUAL_TO_TEXT.value == "VISUAL_TO_TEXT"
+        assert ModalityTransformationType.TABLE_TO_LIST.value == "TABLE_TO_LIST"
+        assert ModalityTransformationType.CHART_TO_DESCRIPTION.value == "CHART_TO_DESCRIPTION"
+        assert ModalityTransformationType.IMAGE_TO_ALT_TEXT.value == "IMAGE_TO_ALT_TEXT"
+        assert ModalityTransformationType.COMPLEX_TO_SIMPLE.value == "COMPLEX_TO_SIMPLE"
+        assert ModalityTransformationType.MEDIA_TO_TRANSCRIPT.value == "MEDIA_TO_TRANSCRIPT"
+        assert ModalityTransformationType.INTERACTIVE_TO_STATIC.value == "INTERACTIVE_TO_STATIC"
 
     def test_enum_count(self) -> None:
         """Test correct number of values."""
-        assert len(TransformationType) == 8
+        assert len(ModalityTransformationType) == 8
 
 
 class TestNotificationStyleEnum:
@@ -461,27 +461,27 @@ class TestDegradationTransformation:
     def test_create_transformation(self) -> None:
         """Test creating a transformation record."""
         transform = DegradationTransformation(
-            transformation_type=TransformationType.VOICE_TO_TEXT,
+            transformation_type=ModalityTransformationType.VOICE_TO_TEXT,
             original_format="SSML voice response",
             target_format="Formatted text with emphasis",
             fidelity=0.95,
             notes="Pauses converted to paragraph breaks",
         )
 
-        assert transform.transformation_type == TransformationType.VOICE_TO_TEXT
+        assert transform.transformation_type == ModalityTransformationType.VOICE_TO_TEXT
         assert transform.fidelity == 0.95
 
     def test_table_to_list_transformation(self) -> None:
         """Test table to list transformation."""
         transform = DegradationTransformation(
-            transformation_type=TransformationType.TABLE_TO_LIST,
+            transformation_type=ModalityTransformationType.TABLE_TO_LIST,
             original_format="3-column data table",
             target_format="Bullet list with labels",
             fidelity=0.85,
             notes="Column relationships may be less clear",
         )
 
-        assert transform.transformation_type == TransformationType.TABLE_TO_LIST
+        assert transform.transformation_type == ModalityTransformationType.TABLE_TO_LIST
         assert transform.fidelity == 0.85
 
 
@@ -661,7 +661,7 @@ class TestFallbackSelection:
             rationale="Voice unavailable, text is most similar for short content",
             confidence=0.85,
             expected_fidelity=0.95,
-            transformations_needed=[TransformationType.VOICE_TO_TEXT],
+            transformations_needed=[ModalityTransformationType.VOICE_TO_TEXT],
             alternative=Modality.VISUAL,
         )
 
@@ -679,8 +679,8 @@ class TestFallbackSelection:
             confidence=1.0,
             expected_fidelity=0.90,
             transformations_needed=[
-                TransformationType.VISUAL_TO_TEXT,
-                TransformationType.CHART_TO_DESCRIPTION,
+                ModalityTransformationType.VISUAL_TO_TEXT,
+                ModalityTransformationType.CHART_TO_DESCRIPTION,
             ],
         )
 
@@ -738,8 +738,8 @@ class TestTransformedContent:
         transformed = TransformedContent(
             content=response,
             transformations_applied=[
-                TransformationType.VOICE_TO_TEXT,
-                TransformationType.COMPLEX_TO_SIMPLE,
+                ModalityTransformationType.VOICE_TO_TEXT,
+                ModalityTransformationType.COMPLEX_TO_SIMPLE,
             ],
             fidelity=0.92,
             notes="Prosody converted to text emphasis",
@@ -767,7 +767,7 @@ class TestTransformedContent:
 
         transformed = TransformedContent(
             content=response,
-            transformations_applied=[TransformationType.CHART_TO_DESCRIPTION],
+            transformations_applied=[ModalityTransformationType.CHART_TO_DESCRIPTION],
             fidelity=0.75,
             lost_elements=["Interactive zoom", "Data point tooltips", "Trend lines"],
             notes="Chart converted to text summary",
@@ -903,7 +903,7 @@ class TestFallbackIntegration:
             rationale="Voice timeout, text is quick alternative",
             confidence=0.9,
             expected_fidelity=0.95,
-            transformations_needed=[TransformationType.VOICE_TO_TEXT],
+            transformations_needed=[ModalityTransformationType.VOICE_TO_TEXT],
             alternative=Modality.VISUAL,
         )
 
@@ -957,8 +957,8 @@ class TestFallbackIntegration:
             confidence=1.0,
             expected_fidelity=0.80,
             transformations_needed=[
-                TransformationType.VISUAL_TO_TEXT,
-                TransformationType.TABLE_TO_LIST,
+                ModalityTransformationType.VISUAL_TO_TEXT,
+                ModalityTransformationType.TABLE_TO_LIST,
             ],
         )
 
@@ -1017,7 +1017,7 @@ class TestTypeImports:
         assert ErrorSeverity is not None
         assert RecoveryTier is not None
         assert OverallHealth is not None
-        assert TransformationType is not None
+        assert ModalityTransformationType is not None
         assert NotificationStyle is not None
         assert RecoveryActionType is not None
 

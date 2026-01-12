@@ -1,0 +1,202 @@
+{
+  "schema_id": "{{SCHEMA_ID}}",
+  "name": "{{PROJECT_NAME_TITLE}} LUI",
+  "description": "A Language User Interface for {{PROJECT_NAME_TITLE}}",
+  "version": "1.0.0",
+  "domain": {
+    "domain_name": "{{PROJECT_NAME}}",
+    "subdomain": "support-operations",
+    "description": "Customer support and help desk operations demonstrating LUI patterns",
+    "key_concepts": ["support", "tickets", "faq", "escalation", "feedback"]
+  },
+  "components": [
+    {
+      "component_id": "search-faq",
+      "component_type": "QUERY",
+      "intent": "Search FAQ or knowledge base for answers",
+      "description": "Demonstrates QUERY component type with semantic search and relevance scoring",
+      "invocation": {
+        "primary_phrase": "search faq",
+        "alternate_phrases": ["find answer", "help with", "how do I", "search help"],
+        "examples": [
+          "How do I reset my password?",
+          "Search FAQ for billing",
+          "Find answer about refunds",
+          "Help with account settings"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "query",
+          "type": "string",
+          "required": true,
+          "description": "The search query or question"
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "required": false,
+          "description": "Optional category filter (e.g., billing, technical, account)"
+        }
+      ],
+      "feedback": {
+        "success_template": "Found {count} relevant articles for '{query}'",
+        "error_template": "Could not search FAQ: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "create-ticket",
+      "component_type": "ACTION",
+      "intent": "Submit a new support ticket",
+      "description": "Demonstrates ACTION component with structured ticket creation and priority levels",
+      "invocation": {
+        "primary_phrase": "create ticket",
+        "alternate_phrases": ["submit ticket", "report issue", "new ticket", "contact support"],
+        "examples": [
+          "Create a support ticket about login problems",
+          "Report an issue with payment processing",
+          "Submit ticket for high priority bug",
+          "I need help with my account"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "subject",
+          "type": "string",
+          "required": true,
+          "description": "Brief subject line for the ticket"
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "required": true,
+          "description": "Detailed description of the issue"
+        },
+        {
+          "name": "priority",
+          "type": "string",
+          "required": false,
+          "description": "Priority level: low, medium, high, urgent"
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "required": false,
+          "description": "Issue category (e.g., technical, billing, account)"
+        }
+      ],
+      "feedback": {
+        "success_template": "Ticket #{ticket_id} created: '{subject}' (Priority: {priority})",
+        "error_template": "Could not create ticket: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "check-status",
+      "component_type": "QUERY",
+      "intent": "Check status of existing support ticket",
+      "description": "Demonstrates ticket lifecycle tracking and status queries",
+      "invocation": {
+        "primary_phrase": "check ticket status",
+        "alternate_phrases": ["ticket status", "check my ticket", "where is my ticket", "status of ticket"],
+        "examples": [
+          "Check status of ticket 12345",
+          "What's the status of my ticket?",
+          "Check my latest ticket",
+          "Where is ticket about billing?"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "ticket_id",
+          "type": "string",
+          "required": false,
+          "description": "Ticket ID or reference (if not provided, shows latest tickets)"
+        }
+      ],
+      "feedback": {
+        "success_template": "Ticket #{ticket_id} status: {status}. Last updated: {updated_at}",
+        "error_template": "Could not retrieve ticket status: {error}",
+        "confirmation_required": false
+      }
+    },
+    {
+      "component_id": "escalate-ticket",
+      "component_type": "ACTION",
+      "intent": "Escalate ticket to human agent",
+      "description": "Demonstrates escalation triggers and handoff to human support",
+      "invocation": {
+        "primary_phrase": "escalate ticket",
+        "alternate_phrases": ["talk to agent", "speak to human", "escalate to support", "need human help"],
+        "examples": [
+          "Escalate my ticket to a human agent",
+          "I need to talk to a real person",
+          "Escalate ticket 12345",
+          "This needs human attention"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "ticket_id",
+          "type": "string",
+          "required": false,
+          "description": "Ticket ID to escalate (if not provided, escalates latest ticket)"
+        },
+        {
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "description": "Reason for escalation"
+        }
+      ],
+      "feedback": {
+        "success_template": "Ticket #{ticket_id} escalated to human agent. Expected response time: {response_time}",
+        "error_template": "Could not escalate ticket: {error}",
+        "confirmation_required": true,
+        "confirmation_prompt": "Escalating to a human agent may take longer to respond. Continue?"
+      }
+    },
+    {
+      "component_id": "provide-feedback",
+      "component_type": "FEEDBACK",
+      "intent": "Rate and provide feedback on support interaction",
+      "description": "Demonstrates satisfaction tracking and feedback collection",
+      "invocation": {
+        "primary_phrase": "provide feedback",
+        "alternate_phrases": ["rate support", "give feedback", "how was support", "satisfaction survey"],
+        "examples": [
+          "Rate my support experience",
+          "Provide feedback on ticket 12345",
+          "The support was helpful",
+          "I'm satisfied with the resolution"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "ticket_id",
+          "type": "string",
+          "required": false,
+          "description": "Ticket ID to provide feedback for (if not provided, uses latest resolved ticket)"
+        },
+        {
+          "name": "rating",
+          "type": "number",
+          "required": true,
+          "description": "Rating from 1-5 stars"
+        },
+        {
+          "name": "comment",
+          "type": "string",
+          "required": false,
+          "description": "Optional feedback comment"
+        }
+      ],
+      "feedback": {
+        "success_template": "Thank you for your feedback! You rated this interaction {rating}/5 stars.",
+        "error_template": "Could not submit feedback: {error}",
+        "confirmation_required": false
+      }
+    }
+  ]
+}
