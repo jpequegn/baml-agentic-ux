@@ -35,7 +35,8 @@ baml-agentic-ux/
 │
 ├── src/
 │   ├── lui_simulator/           # Interactive simulator module
-│   └── lui_schema_export/       # Multi-format exporters
+│   ├── lui_schema_export/       # Multi-format exporters
+│   └── context_primitives/      # Session state management
 │
 ├── examples/
 │   ├── task_manager_schema.json # Example: Task management LUI
@@ -277,6 +278,68 @@ tests:
 
 - [User Guide](docs/testing/user-guide.md) - Complete usage guide
 - [API Reference](docs/testing/api-reference.md) - Detailed API documentation
+
+## Context Primitives
+
+Session state management for multi-turn Language User Interfaces.
+
+### Features
+
+- **Session Management** - Create, retrieve, and expire sessions with metadata
+- **Conversation History** - Track multi-turn conversations with windowing and summarization
+- **Context Variables** - Type-safe key-value storage for session state
+- **Multiple Backends** - In-memory (dev), Redis (cache), PostgreSQL (persist), Hybrid (production)
+- **BAML Integration** - Seamless context injection into BAML functions
+- **Decorator System** - Declarative context injection with `@contextual`, `@persist_result`, etc.
+
+### Quick Start
+
+```python
+from src.context_primitives import (
+    ContextConfig, InMemoryContextProvider, ConversationTurn,
+    init_context_system_async, session_scope, contextual
+)
+from datetime import datetime, timezone
+
+# Simple usage with provider
+config = ContextConfig(max_history_turns=20, ttl_seconds=3600)
+provider = InMemoryContextProvider(config)
+
+session = await provider.create_session("user_123")
+turn = ConversationTurn(
+    turn_id=1,
+    timestamp=datetime.now(timezone.utc),
+    user_input="Hello!",
+    assistant_response="Hi there!"
+)
+await provider.add_turn("user_123", turn)
+
+# Or use decorators
+await init_context_system_async(config=config)
+
+@contextual(inject_history=True, inject_variables=True)
+async def chat(user_input: str, *, context, **kwargs):
+    history = context.history
+    return f"You said: {user_input}"
+
+async with session_scope("user_123"):
+    response = await chat("Hello!")
+```
+
+### Storage Backends
+
+| Backend | Use Case | Persistence | Performance |
+|---------|----------|-------------|-------------|
+| Memory | Development, testing | None | Fastest |
+| Redis | Production caching | Optional | Very fast |
+| PostgreSQL | Long-term storage | Full ACID | Good |
+| Hybrid | Production systems | Redis + PG | Optimal |
+
+### Documentation
+
+- [User Guide](docs/context_primitives/USER_GUIDE.md) - Complete usage guide
+- [API Reference](docs/context_primitives/API_REFERENCE.md) - Detailed API documentation
+- [Architecture](docs/context_primitives/ARCHITECTURE.md) - Design and internals
 
 ## Contributing
 
